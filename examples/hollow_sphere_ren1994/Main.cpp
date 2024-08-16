@@ -135,7 +135,7 @@ main(int argc, char * argv[])
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
-  problem_builder->RegisterMaxwellStressFieldAux("maxwell_stress");
+  // problem_builder->RegisterMaxwellStressFieldAux("maxwell_stress");
 
   hephaestus::Coefficients coefficients = defineCoefficients();
   problem_builder->SetCoefficients(coefficients);

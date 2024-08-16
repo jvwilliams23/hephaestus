@@ -11,6 +11,7 @@
 #include "vector_gridfunction_dot_product_aux.hpp"
 #include "line_sampler_aux.hpp"
 #include "flux_monitor_aux.hpp"
+#include "new_maxwell_stresstensor_aux.hpp"
 
 // Specify classes that perform auxiliary calculations on GridFunctions or
 // Coefficients.
