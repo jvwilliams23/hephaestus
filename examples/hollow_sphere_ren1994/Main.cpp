@@ -127,15 +127,29 @@ main(int argc, char * argv[])
   // for (int l = 0; l < par_ref_lvl; ++l)
   //   pmesh->UniformRefinement();
 
+
   problem_builder->SetMesh(pmesh);
   problem_builder->AddFESpace(std::string("H1"), std::string("H1_3D_P1"));
   problem_builder->AddFESpace(std::string("HCurl"), std::string("ND_3D_P1"));
   problem_builder->AddFESpace(std::string("HDiv"), std::string("RT_3D_P0"));
+  problem_builder->AddFESpace(std::string("Scalar_L2"), std::string("L2_3D_P0"));
   problem_builder->AddGridFunction(std::string("magnetic_vector_potential"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
+  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
+  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
-  // problem_builder->RegisterMaxwellStressFieldAux("maxwell_stress");
+
+  // std::vector<int> boundary_marker(107, 0);
+  // boundary_marker[100] = 1;
+  std::vector<int> boundary_marker(110, 0);
+  boundary_marker[101] = 1;
+  problem_builder->RegisterDevMaxwellStressTensorAux(
+    std::string("dev_maxwell_stress"), 
+    std::string("magnetic_flux_density"), 
+    std::string("magnetic_vector_potential"),
+    boundary_marker
+  );
 
   hephaestus::Coefficients coefficients = defineCoefficients();
   problem_builder->SetCoefficients(coefficients);
@@ -146,12 +160,13 @@ main(int argc, char * argv[])
   hephaestus::Outputs outputs = defineOutputs();
   problem_builder->SetOutputs(outputs);
 
+  // int outer_sphere_id = 0;
   int outer_sphere_id = 101;
-  auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
-    "magnetic_flux_density", "magnetic_vector_potential", outer_sphere_id
-  );
-  maxwell_stress_monitor->SetPriority(2);
-  problem_builder->AddPostprocessor("MaxwellStressMonitor", maxwell_stress_monitor);
+  // auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
+  //   "magnetic_flux_density", "magnetic_vector_potential", outer_sphere_id
+  // );
+  // maxwell_stress_monitor->SetPriority(2);
+  // problem_builder->AddPostprocessor("MaxwellStressMonitor", maxwell_stress_monitor);
 
   hephaestus::InputParameters solver_options;
   solver_options.SetParam("Tolerance", float(1.0e-13));
@@ -172,6 +187,7 @@ main(int argc, char * argv[])
   hephaestus::logger.info("Created executioner");
   executioner->Execute();
 
+/*
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -186,6 +202,7 @@ main(int argc, char * argv[])
       hephaestus::logger.info("t = {} s, F = {} N (?)", t, force);
     }
   }
+*/
 
   MPI_Finalize();
 }

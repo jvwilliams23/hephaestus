@@ -28,6 +28,12 @@ public:
                                       const std::string & b_field_name,
                                       const std::string & j_field_name) override;
 
+  // Enable auxiliary calculation of F_Mst
+  void RegisterDevMaxwellStressTensorAux(const std::string & f_field_name,
+                                      const std::string & h_field_name,
+                                      const std::string & b_field_name,
+                                      const std::vector<int> boundary_attr_marker = {-1}) override;
+
   void RegisterCoefficients() override;
 
 protected:

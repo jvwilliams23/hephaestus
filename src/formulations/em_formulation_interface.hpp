@@ -59,5 +59,13 @@ public:
   {
     MFEM_ABORT("Joule heating auxsolver not available for this formulation");
   }
+
+  virtual void RegisterDevMaxwellStressTensorAux(const std::string & f_field_name,
+                                                 const std::string & b_field_name,
+                                                 const std::string & h_field_name,
+                                                 const std::vector<int> boundary_attr_marker)
+  {
+    MFEM_ABORT("DEVMAXWELL NOT AVAIl")
+  }
 };
 } // namespace hephaestus
