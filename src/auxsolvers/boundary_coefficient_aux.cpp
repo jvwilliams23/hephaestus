@@ -113,13 +113,13 @@ BoundaryCoefficientAux::Solve(double t)
   _b->Update();
   _b->Assemble();
 
-  for (int i=0; i<_gf_child->Size();++i)
-  {
-    std::cout << "init..   x[i="<<i<<"] = "<< x[i] << " "
-      << " _b = " << _b->GetData()[i]
-      << " _gf_child[i] " << _gf_child->GetData()[i]
-      << std::endl;
-  }
+  // for (int i=0; i<_gf_child->Size();++i)
+  // {
+  //   std::cout << "init..   x[i="<<i<<"] = "<< x[i] << " "
+  //     << " _b = " << _b->GetData()[i]
+  //     << " _gf_child[i] " << _gf_child->GetData()[i]
+  //     << std::endl;
+  // }
 
   _solver->Mult(*_b, x);
 
@@ -130,13 +130,21 @@ BoundaryCoefficientAux::Solve(double t)
   //     << " gf " << _gf_child->GetData()[i]
   // }
   _gf_child->SetFromTrueDofs(x);
-  for (int i=0; i<_gf_child->Size();++i)
-  {
-    std::cout << "post-Mult.   x[i="<<i<<"] = "<< x[i] << " "
-      << " _b = " << _b->GetData()[i]
-      << " _gf_child[i] " << _gf_child->GetData()[i]
-      << std::endl;
-  }
+  std::ostringstream mesh_name, port_name;
+  int myid = mfem::Mpi::WorldRank();
+  mesh_name << "port_mesh." << std::setfill('0') << std::setw(6) << myid;
+  port_name << "port_mode." << std::setfill('0') << std::setw(6) << myid;
+  std::ofstream mesh_ofs(mesh_name.str().c_str());
+  std::ofstream port_ofs(port_name.str().c_str());
+  _mesh_child->Print(mesh_ofs);
+  _gf_child->Save(port_ofs);
+  // for (int i=0; i<_gf_child->Size();++i)
+  // {
+  //   std::cout << "post-Mult.   x[i="<<i<<"] = "<< x[i] << " "
+  //     << " _b = " << _b->GetData()[i]
+  //     << " _gf_child[i] " << _gf_child->GetData()[i]
+  //     << std::endl;
+  // }
 
   if (_gf)
     _mesh_child->Transfer(*_gf_child, *_gf);
