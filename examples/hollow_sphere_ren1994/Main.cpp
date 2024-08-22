@@ -165,7 +165,7 @@ main(int argc, char * argv[])
   problem_builder->SetOutputs(outputs);
 
   // int outer_sphere_id = 0;
-  int outer_sphere_id = 101;
+  
   // auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
   //   "magnetic_flux_density", "magnetic_vector_potential", outer_sphere_id
   // );
@@ -175,7 +175,7 @@ main(int argc, char * argv[])
   hephaestus::InputParameters solver_options;
   solver_options.SetParam("Tolerance", float(1.0e-13));
   solver_options.SetParam("AbsTolerance", float(1.0e-16));
-  solver_options.SetParam("MaxIter", (unsigned int)500);
+  solver_options.SetParam("MaxIter", (unsigned int)100);
   problem_builder->SetSolverOptions(solver_options);
 
   problem_builder->FinalizeProblem();
