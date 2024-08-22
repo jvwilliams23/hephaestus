@@ -4,6 +4,8 @@
 namespace hephaestus
 {
 
+  void inheritBdrAttributes(const mfem::ParMesh * parent_mesh, mfem::ParSubMesh * child_mesh);
+
 // Interpolate a stored scalar Coefficient onto a (scalar) GridFunction
 // by solving (p, q) = (λ, q)
 class BoundaryCoefficientAux : public AuxSolver
@@ -11,7 +13,7 @@ class BoundaryCoefficientAux : public AuxSolver
 public:
   BoundaryCoefficientAux(std::string gf_name,
                  std::string coef_name,
-                 std::vector<int> attr_marker_int = {-1},
+                 mfem::Array<int> boundary_attr,
                  hephaestus::InputParameters solver_options = hephaestus::InputParameters()
                  );
 

@@ -1,4 +1,5 @@
 #include "boundary_coefficient_aux.hpp"
+#include "utils.hpp"
 
 #include <utility>
 
@@ -7,12 +8,12 @@ namespace hephaestus
 
 BoundaryCoefficientAux::BoundaryCoefficientAux(std::string gf_name,
                                std::string coef_name,
-                               std::vector<int> attr_marker_int,
+                               mfem::Array<int> boundary_attr,
                                hephaestus::InputParameters solver_options
                                )
   : _gf_name(std::move(gf_name)),
     _coef_name(std::move(coef_name)),
-    _attr_marker_int(attr_marker_int),
+    _boundary_attr(boundary_attr),
     _solver_options(std::move(solver_options))
 {
 }

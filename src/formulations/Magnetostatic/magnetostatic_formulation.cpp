@@ -72,13 +72,12 @@ void
 MagnetostaticFormulation::RegisterDevMaxwellStressTensorAux(const std::string & f_field_name,
                                                          const std::string & h_field_name,
                                                          const std::string & b_field_name,
-                                                         const std::vector<int> boundary_attr_marker)
+                                                         const mfem::Array<int> boundary_attr)
 {
-  //* Lorentz force density = J x B
   hephaestus::AuxSolvers & auxsolvers = GetProblem()->_postprocessors;
   auxsolvers.Register(f_field_name,
                       std::make_shared<hephaestus::DevMaxwellStressTensorAux>(
-                          f_field_name, f_field_name, h_field_name, b_field_name, boundary_attr_marker));
+                          f_field_name, f_field_name, h_field_name, b_field_name, boundary_attr));
 
   auxsolvers.Get(f_field_name)->SetPriority(2);
 

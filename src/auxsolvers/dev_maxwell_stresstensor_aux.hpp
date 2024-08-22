@@ -45,7 +45,7 @@ public:
                          const std::string & f_coef_name,
                          std::string b_gf_name,
                          std::string h_gf_name,
-                         std::vector<int> boundary_attr_marker = {-1});
+                            mfem::Array<int> boundary_attr);
 
   ~DevMaxwellStressTensorAux() override = default;
 

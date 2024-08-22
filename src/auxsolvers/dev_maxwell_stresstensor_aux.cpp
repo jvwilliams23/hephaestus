@@ -68,8 +68,8 @@ DevMaxwellStressTensorAux::DevMaxwellStressTensorAux(
     const std::string & f_coef_name,
     std::string b_gf_name,
     std::string h_gf_name,
-    std::vector<int> boundary_attr_marker)
-  : BoundaryCoefficientAux(f_gf_name, f_coef_name, boundary_attr_marker),
+    mfem::Array<int> boundary_attr)
+  : BoundaryCoefficientAux(f_gf_name, f_coef_name, boundary_attr),
     _b_gf_name(std::move(b_gf_name)),
     _h_gf_name(std::move(h_gf_name))
 {

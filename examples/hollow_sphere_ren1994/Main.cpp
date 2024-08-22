@@ -142,8 +142,12 @@ main(int argc, char * argv[])
 
   // std::vector<int> boundary_marker(107, 0);
   // boundary_marker[100] = 1;
-  std::vector<int> boundary_marker(110, 0);
-  boundary_marker[101] = 1;
+  int outer_sphere_id = 101;
+  int max_id_surf = 110;
+  // std::vector<int> boundary_marker(max_id_surf+1, 0);
+  // std::vector<int> boundary_marker = {outer_sphere_id};
+  mfem::Array<int> boundary_marker;
+  boundary_marker.Append(outer_sphere_id);
   problem_builder->RegisterDevMaxwellStressTensorAux(
     std::string("dev_maxwell_stress"), 
     std::string("magnetic_flux_density"), 

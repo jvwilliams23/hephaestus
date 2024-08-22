@@ -32,7 +32,7 @@ public:
   void RegisterDevMaxwellStressTensorAux(const std::string & f_field_name,
                                       const std::string & h_field_name,
                                       const std::string & b_field_name,
-                                      const std::vector<int> boundary_attr_marker = {-1}) override;
+                                      const mfem::Array<int> boundary_attr) override;
 
   void RegisterCoefficients() override;
 
