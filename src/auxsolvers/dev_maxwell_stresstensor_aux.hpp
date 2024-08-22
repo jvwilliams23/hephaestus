@@ -27,6 +27,7 @@ public:
   ~DevMaxwellStressTensorAuxCoefficient() override = default;
 
   double Eval(mfem::ElementTransformation & T, const mfem::IntegrationPoint & ip) override;
+  // double Eval(mfem::FaceElementTransformations & T, const mfem::IntegrationPoint & ip) override;
 };
 
 // Auxsolver to project the dot product of two vector gridfunctions onto a third
@@ -42,9 +43,9 @@ private:
 
 public:
   DevMaxwellStressTensorAux(const std::string & f_gf_name,
-                         const std::string & f_coef_name,
-                         std::string b_gf_name,
-                         std::string h_gf_name,
+                            const std::string & f_coef_name,
+                            std::string b_gf_name,
+                            std::string h_gf_name,
                             mfem::Array<int> boundary_attr);
 
   ~DevMaxwellStressTensorAux() override = default;

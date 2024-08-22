@@ -5,63 +5,54 @@
 namespace hephaestus
 {
 
+// double
+// DevMaxwellStressTensorAuxCoefficient::Eval(mfem::ElementTransformation & T,
+//                                         const mfem::IntegrationPoint & ip)
+// {
+//   double air_permeability = 1.25663706e-6;
+//   double sphere_permeability = 500*air_permeability;
+//   std::random_device rd;  // Will be used to obtain a seed for the random number engine
+//   std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+//   std::uniform_real_distribution<> dist(0, 10000);
+  
+//   mfem::Vector _b_gf_val;
+//   mfem::Vector _h_gf_val;
+//   _b_gf->GetVectorValue(T, ip, _b_gf_val);
+//   _h_gf->GetVectorValue(T, ip, _h_gf_val);
+
+//   return _b_gf_val * _h_gf_val;
+//   // return dist(gen);///1000.0;
+//   // return 1000.0;
+// }
+
 double
 DevMaxwellStressTensorAuxCoefficient::Eval(mfem::ElementTransformation & T,
                                         const mfem::IntegrationPoint & ip)
 {
-  // double coef_value;
-  // coef_value = _coef.Eval(T, ip);
-  // mfem::Vector b;
-  // mfem::Vector h;
-
-  // _b_gf->GetVectorValue(T, ip, b);
-  // _h_gf->GetVectorValue(T, ip, h);
-
   double air_permeability = 1.25663706e-6;
   double sphere_permeability = 500*air_permeability;
-
-  // F = [b_n^2 * (1/\mu_0 - 1/\mu) - h_t^2 * (\mu_0 - \mu)] * n * 1/2
-  // return 0.5 * (
-  //   ((_b*_b) * (1.0/air_permeability - 1.0/sphere_permeability)) 
-  //   - ((_h*_h) * (air_permeability - sphere_permeability))
-  // )*;
-
-  // const mfem::FiniteElementSpace * fes = _b_gf->FESpace();
-  // mfem::Mesh * mesh = fes->GetMesh();
+  std::random_device rd;  // Will be used to obtain a seed for the random number engine
+  std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+  std::uniform_real_distribution<> dist(0, 10000);
   
-  // mfem::Vector local_dofs, normal_vec;
-  // mfem::DenseMatrix dshape;
-  // mfem::Array<int> dof_ids;
+  mfem::Vector _b_gf_val;
+  mfem::Vector _h_gf_val;
+  // _b_gf->GetVectorValue(T, ip, _b_gf_val);
+  // _h_gf->GetVectorValue(T, ip, _h_gf_val);
 
-  // int face_attr(101); // TODO: Pass as arg to Eval
-
-  // for (int i = 0; i < mesh->GetNBE(); i++)
-  // {
-
-  //   if (mesh->GetBdrAttribute(i) != face_attr)
-  //     continue;
-
-  //   mfem::FaceElementTransformations * f_tr =
-  //       mesh->GetFaceElementTransformations(mesh->GetBdrElementFaceIndex(i));
-  //   if (f_tr == nullptr)
-  //     continue;
-
-  //   const mfem::FiniteElement & elem = *fes->GetFE(f_tr->Elem1No);
-  //   f_tr->Attribute = mesh->GetAttribute(f_tr->Elem1No);
-  //   const int int_order = 2 * elem.GetOrder() + 3;
-  //   const mfem::IntegrationRule & ir = mfem::IntRules.Get(f_tr->FaceGeom, int_order);
-
-  //   fes->GetElementDofs(f_tr->Elem1No, dof_ids);
-  //   _b_gf->GetSubVector(dof_ids, local_dofs);
-  //   const int space_dim = f_tr->Face->GetSpaceDim();
-  //   normal_vec.SetSize(space_dim);
-  //   dshape.SetSize(elem.GetDof(), space_dim);
-  // }
-
-  // mfem::Vector
-  // return _b_gf->GetValue(T, ip); 
-  return 1.0;
+  // return _b_gf_val * _h_gf_val;
+  // return dist(gen);///1000.0;
+  return 1000.0;
 }
+
+// double
+// DevMaxwellStressTensorAuxCoefficient::Eval(mfem::FaceElementTransformations & T,
+//                                         const mfem::IntegrationPoint & ip)
+// {
+//   double air_permeability = 1.25663706e-6;
+//   double sphere_permeability = 500*air_permeability;
+//   return 1.0;
+// }
 
 DevMaxwellStressTensorAux::DevMaxwellStressTensorAux(
     const std::string & f_gf_name,
