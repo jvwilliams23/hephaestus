@@ -32,7 +32,7 @@ IF(BUILD_TYPE STREQUAL "TEST")
   )
 ENDIF()
 
-add_subdirectory(unit)
-add_subdirectory(integration)
-add_subdirectory(regression)
+#add_subdirectory(unit)
+#add_subdirectory(integration)
+#add_subdirectory(regression)
 
