@@ -41,7 +41,7 @@ DevMaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
   _h_gf = gridfunctions.Get(_h_gf_name);
 
 
-  coefficients._scalars.Register(_coef_name,
+  coefficients._vectors.Register(_vec_coef_name,
                                  std::make_shared<DevMaxwellStressTensorAuxCoefficient>(
                                      _b_gf, _h_gf));
 
