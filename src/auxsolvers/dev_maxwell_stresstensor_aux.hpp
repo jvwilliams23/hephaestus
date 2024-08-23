@@ -1,5 +1,5 @@
 #pragma once
-#include "boundary_coefficient_aux.hpp"
+#include "vector_boundarynormal_coefficient_aux.hpp"
 
 // Specify postprocessors that depend on one or more gridfunctions
 namespace hephaestus
@@ -11,7 +11,8 @@ namespace hephaestus
 // h_t is the tangential component of the magnetic field at the interface
 // \mu_0 and \mu are permeabilities of two materials
 // n is the unit normal vector (of the surface)
-class DevMaxwellStressTensorAuxCoefficient : public mfem::Coefficient
+// class DevMaxwellStressTensorAuxCoefficient : public mfem::Coefficient
+class DevMaxwellStressTensorAuxCoefficient : public mfem::VectorCoefficient
 {
 private:
   const mfem::ParGridFunction * _b_gf{nullptr};
@@ -20,19 +21,22 @@ private:
 public:
   DevMaxwellStressTensorAuxCoefficient(const mfem::ParGridFunction * b_gf,
                                        const mfem::ParGridFunction * h_gf)
-    : _b_gf{b_gf}, _h_gf{h_gf}
+    : mfem::VectorCoefficient(3), _b_gf{b_gf}, _h_gf{h_gf}
+    // : _b_gf{b_gf}, _h_gf{h_gf}
   {
   }
 
   ~DevMaxwellStressTensorAuxCoefficient() override = default;
 
-  double Eval(mfem::ElementTransformation & T, const mfem::IntegrationPoint & ip) override;
+  void Eval(mfem::Vector & uxv,
+            mfem::ElementTransformation & T,
+            const mfem::IntegrationPoint & ip) override;
   // double Eval(mfem::FaceElementTransformations & T, const mfem::IntegrationPoint & ip) override;
 };
 
 // Auxsolver to project the dot product of two vector gridfunctions onto a third
 // (scalar) GridFunction
-class DevMaxwellStressTensorAux : public BoundaryCoefficientAux
+class DevMaxwellStressTensorAux : public VectorBoundaryNormalCoefficientAux
 {
 private:
   mfem::ParGridFunction * _b_gf{nullptr};
