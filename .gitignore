@@ -1,4 +1,10 @@
 build
+build-dbg
+workdir
+backup*
+*compile*.sh
+*.swp
+mfem_q.md
 lib
 bin
 .vscode
