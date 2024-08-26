@@ -136,8 +136,10 @@ main(int argc, char * argv[])
   problem_builder->AddGridFunction(std::string("magnetic_vector_potential"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
+
   // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
-  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
+  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
+  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
 
   // std::vector<int> boundary_marker(107, 0);

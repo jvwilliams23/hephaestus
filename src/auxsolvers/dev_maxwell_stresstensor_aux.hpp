@@ -1,5 +1,7 @@
 #pragma once
-#include "vector_boundarynormal_coefficient_aux.hpp"
+#include "auxsolver_base.hpp"
+// #include "vector_boundarynormal_coefficient_aux.hpp"
+// #include "boundary_coefficient_aux.hpp"
 
 // Specify postprocessors that depend on one or more gridfunctions
 namespace hephaestus
@@ -21,7 +23,7 @@ private:
 public:
   DevMaxwellStressTensorAuxCoefficient(const mfem::ParGridFunction * b_gf,
                                        const mfem::ParGridFunction * h_gf)
-    : mfem::VectorCoefficient(3), _b_gf{b_gf}, _h_gf{h_gf}
+    : mfem::VectorCoefficient(2), _b_gf{b_gf}, _h_gf{h_gf}
     // : _b_gf{b_gf}, _h_gf{h_gf}
   {
   }
@@ -31,12 +33,13 @@ public:
   void Eval(mfem::Vector & uxv,
             mfem::ElementTransformation & T,
             const mfem::IntegrationPoint & ip) override;
-  // double Eval(mfem::FaceElementTransformations & T, const mfem::IntegrationPoint & ip) override;
+  // double Eval(mfem::ElementTransformation & T, const mfem::IntegrationPoint & ip) override;
 };
 
 // Auxsolver to project the dot product of two vector gridfunctions onto a third
 // (scalar) GridFunction
-class DevMaxwellStressTensorAux : public VectorBoundaryNormalCoefficientAux
+class DevMaxwellStressTensorAux : public AuxSolver // : public VectorBoundaryNormalCoefficientAux
+// class DevMaxwellStressTensorAux : public BoundaryCoefficientAux
 {
 private:
   mfem::ParGridFunction * _b_gf{nullptr};
@@ -52,10 +55,45 @@ public:
                             std::string h_gf_name,
                             mfem::Array<int> boundary_attr);
 
-  ~DevMaxwellStressTensorAux() override = default;
+  // ~DevMaxwellStressTensorAux() override = default;
 
   void Init(const hephaestus::GridFunctions & gridfunctions,
             hephaestus::Coefficients & coefficients) override;
+
+  virtual void BuildBilinearForm();
+  virtual void BuildLinearForm();
+  void Solve(double t = 0.0) override;
+
+protected:
+  const std::string _gf_name;   // name of the variable
+  const std::string _coef_name; // name of the coefficient
+
+  mfem::ParMesh * _mesh_parent{nullptr};
+  std::unique_ptr<mfem::ParSubMesh> _mesh_child{nullptr};
+  mfem::ParGridFunction * _gf{nullptr};
+  mfem::VectorCoefficient * _vec_coef{nullptr};
+  // mfem::Coefficient * _mass_coef{nullptr};
+  std::shared_ptr<mfem::Coefficient> _mass_coef{nullptr};
+  std::shared_ptr<mfem::Coefficient> _rt_boundary_coef{nullptr};
+  mfem::Array<int> _boundary_attr; // int of attribute to limit boundary integration to
+  mfem::Array<int> _boundary_attr_marker; // int of attribute to limit boundary integration to
+
+
+  // Pointer to store test FE space. Assumed to be same as trial FE space.
+  mfem::ParFiniteElementSpace * _test_fes{nullptr};
+
+  // Bilinear and linear forms
+  std::unique_ptr<mfem::ParBilinearForm> _a{nullptr};
+  std::unique_ptr<mfem::ParLinearForm> _b{nullptr};
+
+private:
+  const hephaestus::InputParameters _solver_options;
+
+  // Operator matrices
+  std::unique_ptr<mfem::HypreParMatrix> _a_mat{nullptr};
+
+  // Solver
+  std::unique_ptr<hephaestus::DefaultJacobiPCGSolver> _solver{nullptr};
 };
 
 } // namespace hephaestus
