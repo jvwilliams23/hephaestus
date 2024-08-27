@@ -17,12 +17,16 @@ namespace hephaestus
 class DevMaxwellStressTensorAuxCoefficient : public mfem::VectorCoefficient
 {
 private:
-  const mfem::ParGridFunction * _b_gf{nullptr};
+  // const mfem::ParGridFunction * _b_gf{nullptr};
+  const std::shared_ptr<mfem::ParGridFunction> _b_gf{nullptr};
   const mfem::ParGridFunction * _h_gf{nullptr};
 
 public:
-  DevMaxwellStressTensorAuxCoefficient(const mfem::ParGridFunction * b_gf,
-                                       const mfem::ParGridFunction * h_gf)
+  DevMaxwellStressTensorAuxCoefficient(
+    // const mfem::ParGridFunction * b_gf,
+    std::shared_ptr<mfem::ParGridFunction> b_gf,
+    const mfem::ParGridFunction * h_gf
+  )
     : mfem::VectorCoefficient(2), _b_gf{b_gf}, _h_gf{h_gf}
     // : _b_gf{b_gf}, _h_gf{h_gf}
   {
@@ -64,14 +68,33 @@ public:
   virtual void BuildLinearForm();
   void Solve(double t = 0.0) override;
 
+  // Initialises the child submesh.
+  void InitChildMesh();
+
+  // Creates the relevant FE Collections and Spaces for the child submesh.
+  void MakeFESpaces(int stage);
+
+  // Creates the relevant GridFunctions for the child submesh.
+  void MakeGridFunctions(int stage);
+
 protected:
   const std::string _gf_name;   // name of the variable
   const std::string _coef_name; // name of the coefficient
 
   mfem::ParMesh * _mesh_parent{nullptr};
   std::unique_ptr<mfem::ParSubMesh> _mesh_child{nullptr};
+  std::shared_ptr<mfem::ParFiniteElementSpace> _h1_fe_space_child{nullptr};
+  std::shared_ptr<mfem::ParFiniteElementSpace> _h_div_fe_space_child{nullptr};
+  std::unique_ptr<mfem::H1_FECollection> _h1_fe_space_fec_child{nullptr};
+  std::unique_ptr<mfem::RT_FECollection> _h_div_fe_space_fec_child{nullptr};
+  
   mfem::ParGridFunction * _gf{nullptr};
+  std::shared_ptr<mfem::ParGridFunction> _gf_child{nullptr};
+  std::shared_ptr<mfem::ParGridFunction> _b_gf_child{nullptr};
+  // mfem::ParGridFunction * _b_gf_child{nullptr};
+
   mfem::VectorCoefficient * _vec_coef{nullptr};
+  mfem::Coefficient * _scalar_coef{nullptr};
   // mfem::Coefficient * _mass_coef{nullptr};
   std::shared_ptr<mfem::Coefficient> _mass_coef{nullptr};
   std::shared_ptr<mfem::Coefficient> _rt_boundary_coef{nullptr};
@@ -81,12 +104,16 @@ protected:
 
   // Pointer to store test FE space. Assumed to be same as trial FE space.
   mfem::ParFiniteElementSpace * _test_fes{nullptr};
+  mfem::ParFiniteElementSpace * _trial_fes{nullptr};
 
   // Bilinear and linear forms
   std::unique_ptr<mfem::ParBilinearForm> _a{nullptr};
+  // std::unique_ptr<mfem::ParMixedBilinearForm> _a{nullptr};
   std::unique_ptr<mfem::ParLinearForm> _b{nullptr};
 
 private:
+  int _order_h1;
+  int _order_hdiv;
   const hephaestus::InputParameters _solver_options;
 
   // Operator matrices
