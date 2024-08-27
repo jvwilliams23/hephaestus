@@ -23,12 +23,9 @@ private:
 
 public:
   DevMaxwellStressTensorAuxCoefficient(
-    // const mfem::ParGridFunction * b_gf,
-    std::shared_ptr<mfem::ParGridFunction> b_gf,
-    const mfem::ParGridFunction * h_gf
+    std::shared_ptr<mfem::ParGridFunction> b_gf
   )
-    : mfem::VectorCoefficient(2), _b_gf{b_gf}, _h_gf{h_gf}
-    // : _b_gf{b_gf}, _h_gf{h_gf}
+    : mfem::VectorCoefficient(3), _b_gf{b_gf}
   {
   }
 
@@ -37,8 +34,29 @@ public:
   void Eval(mfem::Vector & uxv,
             mfem::ElementTransformation & T,
             const mfem::IntegrationPoint & ip) override;
-  // double Eval(mfem::ElementTransformation & T, const mfem::IntegrationPoint & ip) override;
 };
+
+/*class TangentialHAuxCoefficient : public mfem::VectorCoefficient
+{
+private:
+  // const mfem::ParGridFunction * _b_gf{nullptr};
+  const std::shared_ptr<mfem::ParGridFunction> _b_gf{nullptr};
+  const mfem::ParGridFunction * _h_gf{nullptr};
+
+public:
+  TangentialHAuxCoefficient(
+    std::shared_ptr<mfem::ParGridFunction> h_gf
+  )
+    : mfem::VectorCoefficient(3), _h_gf{h_gf}
+  {
+  }
+
+  ~TangentialHAuxCoefficient() override = default;
+
+  void Eval(mfem::Vector & uxv,
+            mfem::ElementTransformation & T,
+            const mfem::IntegrationPoint & ip) override;
+};*/
 
 // Auxsolver to project the dot product of two vector gridfunctions onto a third
 // (scalar) GridFunction

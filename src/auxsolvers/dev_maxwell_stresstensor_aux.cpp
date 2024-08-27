@@ -19,11 +19,8 @@ DevMaxwellStressTensorAuxCoefficient::Eval(mfem::Vector & uxv,
 
   std::cout << "in DevMaxwellStressTensorAuxCoefficient::Eval" << std::endl;
 
-
-  // TODO:  elem transformation is invalid.. where does it come from? Bilinear form? LinearForm? Something else? Check this instead of fooling around in the dark.
   _b_gf->GetVectorValue(T, ip, uxv);
 
-  // uxv *= (air_mu - sphere_mu);
   std::cout << "b GetVectorValue " << uxv(0) << " " << uxv(1) << std::endl;
 
 }
@@ -56,17 +53,15 @@ DevMaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
   MakeFESpaces(0);
   MakeGridFunctions(0);
 
+  // FIXME: This could be tricky part. Can we give a different name? i.e. is this coef the output field?
   coefficients._vectors.Register(_coef_name,
                                 std::make_shared<DevMaxwellStressTensorAuxCoefficient>(
-                                _b_gf_child,   //  _b_gf, 
-                                _h_gf));
+                                _b_gf_child));
 
   _gf = gridfunctions.Get(_gf_name);
   _vec_coef = coefficients._vectors.Get(_coef_name);
   _mass_coef = std::make_shared<mfem::ConstantCoefficient>(1.0);
 
-
-  // InitChildMesh();
   MakeFESpaces(1);
   MakeGridFunctions(1);
   
