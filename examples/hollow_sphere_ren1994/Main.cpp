@@ -123,9 +123,9 @@ main(int argc, char * argv[])
   mfem::Mesh mesh((std::string(DATA_DIR) + std::string("./hollow_sphere_vac_multiplePhsVols.e")).c_str(), 1, 1);
   auto pmesh = std::make_shared<mfem::ParMesh>(MPI_COMM_WORLD, mesh);
 
-  // int par_ref_lvl = 1;
-  // for (int l = 0; l < par_ref_lvl; ++l)
-  //   pmesh->UniformRefinement();
+  int par_ref_lvl = 0;
+  for (int l = 0; l < par_ref_lvl; ++l)
+    pmesh->UniformRefinement();
 
 
   problem_builder->SetMesh(pmesh);
