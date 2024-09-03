@@ -34,7 +34,9 @@ public:
 
   mfem::ParGridFunction * _b_gf{nullptr};
   mfem::ParGridFunction * _h_gf{nullptr};
-  mfem::Coefficient * _coef{nullptr};
+  // mfem::Coefficient * _coef{nullptr};
+  mfem::ParGridFunction * _gf{nullptr};
+
   int _face_attr;
 };
 

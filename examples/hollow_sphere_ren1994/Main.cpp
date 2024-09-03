@@ -150,12 +150,12 @@ main(int argc, char * argv[])
   // std::vector<int> boundary_marker = {outer_sphere_id};
   mfem::Array<int> boundary_marker;
   boundary_marker.Append(outer_sphere_id);
-  problem_builder->RegisterDevMaxwellStressTensorAux(
-    std::string("dev_maxwell_stress"), 
-    std::string("magnetic_flux_density"), 
-    std::string("magnetic_vector_potential"),
-    boundary_marker
-  );
+  // problem_builder->RegisterDevMaxwellStressTensorAux(
+  //   std::string("dev_maxwell_stress"), 
+  //   std::string("magnetic_flux_density"), 
+  //   std::string("magnetic_vector_potential"),
+  //   boundary_marker
+  // );
 
   hephaestus::Coefficients coefficients = defineCoefficients();
   problem_builder->SetCoefficients(coefficients);
@@ -168,11 +168,11 @@ main(int argc, char * argv[])
 
   // int outer_sphere_id = 0;
   
-  // auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
-  //   "magnetic_flux_density", "magnetic_vector_potential", outer_sphere_id
-  // );
-  // maxwell_stress_monitor->SetPriority(2);
-  // problem_builder->AddPostprocessor("MaxwellStressMonitor", maxwell_stress_monitor);
+  auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
+    "magnetic_flux_density", "magnetic_vector_potential", outer_sphere_id, "dev_maxwell_stress"
+  );
+  maxwell_stress_monitor->SetPriority(2);
+  problem_builder->AddPostprocessor("MaxwellStressMonitor", maxwell_stress_monitor);
 
   hephaestus::InputParameters solver_options;
   solver_options.SetParam("Tolerance", float(1.0e-13));
