@@ -2,6 +2,7 @@
 
 const char * DATA_DIR = "../../data/";
 
+
 hephaestus::Coefficients
 defineCoefficients()
 {
@@ -107,9 +108,12 @@ defineOutputs()
 int
 main(int argc, char * argv[])
 {
+  int ref_level(0);
   mfem::OptionsParser args(argc, argv);
   args.AddOption(
       &DATA_DIR, "-dataDir", "--data_directory", "Directory storing input data for tests.");
+  args.AddOption(
+      &ref_level, "-ref", "--refinement_level", "number of uniform refinement iterations.");
   args.Parse();
   MPI_Init(&argc, &argv);
 
@@ -123,8 +127,9 @@ main(int argc, char * argv[])
   mfem::Mesh mesh((std::string(DATA_DIR) + std::string("./hollow_sphere_vac_multiplePhsVols.e")).c_str(), 1, 1);
   auto pmesh = std::make_shared<mfem::ParMesh>(MPI_COMM_WORLD, mesh);
 
-  int par_ref_lvl = 0;
-  for (int l = 0; l < par_ref_lvl; ++l)
+  // int ref_level = 1;
+  std::cout << "REF LEVEL IS " << ref_level << std::endl;
+  for (int l = 0; l < ref_level; ++l)
     pmesh->UniformRefinement();
 
 
@@ -137,9 +142,9 @@ main(int argc, char * argv[])
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
 
-  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
   // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
   problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
+  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
 
   // std::vector<int> boundary_marker(107, 0);
