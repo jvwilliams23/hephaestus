@@ -25,6 +25,15 @@ public:
 
   void Solve(double t = 0.0) override;
 
+  // Initialises the child submesh.
+  void InitChildMesh();
+
+  // Creates the relevant FE Collections and Spaces for the child submesh.
+  void MakeFESpaces(int stage);
+
+  // Creates the relevant GridFunctions for the child submesh.
+  void MakeGridFunctions(int stage);
+
   std::string _b_name;  // name of the vector variable
   std::string _h_name;  // name of the vector variable
   std::string _coef_name; // name of the coefficient
@@ -37,7 +46,27 @@ public:
   // mfem::Coefficient * _coef{nullptr};
   mfem::ParGridFunction * _gf{nullptr};
 
+  std::shared_ptr<mfem::ParGridFunction> _gf_child{nullptr};
+  std::shared_ptr<mfem::ParGridFunction> _b_gf_child{nullptr};
+  std::shared_ptr<mfem::ParGridFunction> _h_gf_child{nullptr};
+
+  mfem::ParMesh * _mesh_parent{nullptr};
+  std::unique_ptr<mfem::ParSubMesh> _mesh_child{nullptr};
+
+  std::shared_ptr<mfem::ParFiniteElementSpace> _h1_fe_space_child{nullptr};
+  std::unique_ptr<mfem::H1_FECollection> _h1_fe_space_fec_child{nullptr};
+
+  std::shared_ptr<mfem::ParFiniteElementSpace> _h_div_fe_space_child{nullptr};
+  std::unique_ptr<mfem::RT_FECollection> _h_div_fe_space_fec_child{nullptr};
+
+  std::shared_ptr<mfem::ParFiniteElementSpace> _h_curl_fe_space_child{nullptr};
+  std::unique_ptr<mfem::ND_FECollection> _h_curl_fe_space_fec_child{nullptr};
+  
   int _face_attr;
+private:
+  int _order_h1;
+  int _order_hdiv;
+  int _order_hcurl;
 };
 
 } // namespace hephaestus

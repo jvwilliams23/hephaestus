@@ -12,7 +12,7 @@ Questions:
 namespace hephaestus
 {
 double
-calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr, mfem::GridFunction & gf)
+calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int face_attr, mfem::ParGridFunction & gf)
 {
 
   double flux = 0.0;
@@ -26,12 +26,16 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
   // double air_permeability = 1.25663706e-6;
   double sphere_permeability = 500*air_permeability;
 
-  mfem::FiniteElementSpace * gf_fes = gf.FESpace();
-  mfem::FiniteElementSpace * b_fes = b_field->FESpace();
+  std::cout << "Get FES" << std::endl;
+  mfem::FiniteElementSpace * gf_fes = gf.ParFESpace();
+  std::cout << "Get FES" << std::endl;
+  mfem::FiniteElementSpace * b_fes = b_field->ParFESpace();
+  mfem::FiniteElementSpace * h_fes = h_field->ParFESpace();
   // h_field->ProjectGridFunction(*b_field);
   // mfem::Mesh * mesh = b_fes->GetMesh(); // Should be same for B and H?
+
+  std::cout << "Get mesh" << std::endl;
   mfem::Mesh * mesh = gf_fes->GetMesh();
-  mfem::FiniteElementSpace * h_fes = h_field->FESpace();
   // mfem::Mesh * mesh = b_fes->GetMesh(); // Should be same for B and H?
 
   mfem::Vector b_local_dofs, h_local_dofs, normal_vec;
@@ -42,6 +46,8 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
   int elndofs;
   mfem::Array<int> v_dofs, dofs;
 
+
+  std::cout << "Get vdim" << std::endl;
   int bdim = b_fes->GetVDim();
   std::cout << "bdim " << bdim 
     << " hdim " << h_fes->GetVDim() 
@@ -380,6 +386,9 @@ MaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
 {
   _b_gf = gridfunctions.Get(_b_name);
   _h_gf = gridfunctions.Get(_h_name);
+
+  _mesh_parent = _b_gf->ParFESpace()->GetParMesh();
+
   std::cout << "Finding " << _coef_name << " " 
     << coefficients._scalars.Has(_coef_name) << " " 
     << gridfunctions.Has(_coef_name) << " " 
@@ -388,6 +397,12 @@ MaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
   {
     _gf = gridfunctions.Get(_coef_name);
   }
+
+  InitChildMesh();
+  MakeFESpaces(0);
+  MakeGridFunctions(0);
+  MakeFESpaces(1);
+  MakeGridFunctions(1);
 }
 
 void
@@ -398,16 +413,95 @@ MaxwellStressTensorAux::Solve(double t)
   if (_gf != nullptr)
   {
     std::cout << "Passing a gf to calc" << std::endl;
-    force = calcMaxwellStressTensor(_b_gf, _h_gf, _face_attr, *_gf);
+    // force = calcMaxwellStressTensor(_b_gf, _h_gf, _face_attr, *_gf);
+    force = calcMaxwellStressTensor(_b_gf_child.get(), _h_gf_child.get(), _face_attr, *_gf_child.get());
   }
   else
   {
     std::cout << "Passing a dummy coef to calc" << std::endl;
-    force = calcMaxwellStressTensor(_b_gf, _h_gf, _face_attr);
+    // force = calcMaxwellStressTensor(_b_gf, _h_gf, _face_attr);
   }
 
   _times.Append(t);
   _forces.Append(force);
 }
+
+void
+MaxwellStressTensorAux::InitChildMesh()
+{
+  mfem::Array<int> domain_marker;
+  domain_marker.Append(100);
+  if (_mesh_child == nullptr)
+  {
+    _mesh_child = std::make_unique<mfem::ParSubMesh>(
+        mfem::ParSubMesh::CreateFromDomain(*_mesh_parent, domain_marker));
+  }
+}
+
+
+void
+MaxwellStressTensorAux::MakeFESpaces(int stage)
+{ 
+  if (_h1_fe_space_child == nullptr && stage == 1)
+  {
+    std::cout << "Define _h1_child" << std::endl;
+    int dim = _mesh_parent->Dimension();
+    int dim_child = _mesh_child->Dimension();
+    _order_h1 = _gf->ParFESpace()->FEColl()->GetOrder();
+    _h1_fe_space_fec_child =
+        std::make_unique<mfem::H1_FECollection>(_order_h1, dim_child);
+    _h1_fe_space_child = std::make_shared<mfem::ParFiniteElementSpace>(
+        _mesh_child.get(), _h1_fe_space_fec_child.get());
+  }
+  if (_h_div_fe_space_child == nullptr && stage == 0)
+  {
+    std::cout << "Define _h_div_child" << std::endl;
+    _order_hdiv = _b_gf->ParFESpace()->FEColl()->GetOrder();
+    _h_div_fe_space_fec_child =
+      std::make_unique<mfem::RT_FECollection>(_order_hdiv - 1, _mesh_child->Dimension());
+    _h_div_fe_space_child = std::make_shared<mfem::ParFiniteElementSpace>(
+      _mesh_child.get(), _h_div_fe_space_fec_child.get());
+  }
+  if (_h_curl_fe_space_child == nullptr && stage == 0)
+  {
+    std::cout << "Define _h_curl_child" << std::endl;
+    _order_hcurl = _h_gf->ParFESpace()->FEColl()->GetOrder();
+    _h_curl_fe_space_fec_child =
+      std::make_unique<mfem::ND_FECollection>(_order_hcurl, _mesh_child->Dimension());
+    _h_curl_fe_space_child = std::make_shared<mfem::ParFiniteElementSpace>(
+      _mesh_child.get(), _h_curl_fe_space_fec_child.get());
+  }
+}
+
+void 
+MaxwellStressTensorAux::MakeGridFunctions(int stage)
+{
+  if (_gf_child == nullptr && stage == 1){
+    std::cout << "setting _gf_child" << std::endl;
+    // if (_use_scalar_coef)
+    // {
+    //   _gf_child = std::make_shared<mfem::ParGridFunction>(_h_div_fe_space_child.get());
+    // }
+    // else
+    // {
+    // }
+    // _gf_child = std::make_shared<mfem::ParGridFunction>(_h_div_fe_space_child.get());
+    // _gf_child = std::make_shared<mfem::ParGridFunction>(_h_div_fe_space_child.get());
+    _gf_child = std::make_shared<mfem::ParGridFunction>(_h1_fe_space_child.get());
+
+  }
+  if (_b_gf_child == nullptr && stage == 0){
+    std::cout << "setting _b_gf_child" << std::endl;
+    _b_gf_child = std::make_shared<mfem::ParGridFunction>(_h_div_fe_space_child.get());
+    // *_b_gf_child = mfem::ParGridFunction(_h_div_fe_space_child.get());
+  }
+  if (_h_gf_child == nullptr && stage == 0)
+  {
+    std::cout << "setting _h_gf_child" << std::endl;
+    _h_gf_child = std::make_shared<mfem::ParGridFunction>(_h_curl_fe_space_child.get());
+  }
+
+}
+
 
 } // namespace hephaestus
