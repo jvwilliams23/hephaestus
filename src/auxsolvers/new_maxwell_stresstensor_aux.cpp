@@ -79,6 +79,7 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
   //   ;
   //   Rfs << "\n";
   // }
+  mfem::ElementTransformation *eltrans = NULL;
   
   std::cout << "Looping GetNBE " << std::endl;
   for (int i = 0; i < mesh->GetNBE(); i++)
@@ -86,46 +87,40 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
     if (mesh->GetBdrAttribute(i) != face_attr)
       continue;
 
-    mfem::FaceElementTransformations * f_tr =
-        mesh->GetFaceElementTransformations(mesh->GetBdrElementFaceIndex(i));
+    // mfem::FaceElementTransformations * f_tr =
+    //     mesh->GetFaceElementTransformations(mesh->GetBdrElementFaceIndex(i));
 
-    if (f_tr == nullptr)
-      continue;
+    eltrans = b_fes->GetBdrElementTransformation(i);
+    const mfem::FiniteElement &gf_elem = *b_fes->GetBE(i);
 
-    std::cout << "f_tr->OrderW() = " << f_tr->OrderW() << std::endl;
-    const mfem::FiniteElement & gf_elem = *gf_fes->GetFE(f_tr->Elem1No);
-    const mfem::FiniteElement & h_elem = *h_fes->GetFE(f_tr->Elem1No);
-    const mfem::FiniteElement & b_elem = *b_fes->GetFE(f_tr->Elem1No);
-    const int int_order = 2 * gf_elem.GetOrder() + f_tr->OrderW();
-    const mfem::IntegrationRule & ir = mfem::IntRules.Get(f_tr->FaceGeom, int_order);
-    gf_fes->GetElementDofs(f_tr->Elem1No, g_dof_ids);
-    b_fes->GetElementDofs(f_tr->Elem1No, b_dof_ids);
-    b_field->GetSubVector(b_dof_ids, b_local_dofs);
-    h_fes->GetElementDofs(f_tr->Elem1No, h_dof_ids);
-    h_field->GetSubVector(h_dof_ids, h_local_dofs);
-    const int space_dim = f_tr->Face->GetSpaceDim();
+    // if (f_tr == nullptr)
+    //   continue;
+
+    // std::cout << "f_tr->OrderW() = " << f_tr->OrderW() << std::endl;
+    // const mfem::FiniteElement & gf_elem = *gf_fes->GetFE(f_tr->Elem1No);
+    // const mfem::FiniteElement & h_elem = *h_fes->GetFE(f_tr->Elem1No);
+    // const mfem::FiniteElement & b_elem = *b_fes->GetFE(f_tr->Elem1No);
+    const mfem::IntegrationRule *ir = NULL;
+    if (ir == NULL)
+    {
+        const int order = 2*gf_elem.GetOrder() + eltrans->OrderW(); // <-----
+        ir = &mfem::IntRules.Get(eltrans->GetGeometryType(), order);
+    }
+    // const int int_order = 2 * gf_elem.GetOrder() + f_tr->OrderW();
+    // const mfem::IntegrationRule & ir = mfem::IntRules.Get(f_tr->FaceGeom, int_order);
+    // gf_fes->GetElementDofs(f_tr->Elem1No, g_dof_ids);
+    // b_fes->GetElementDofs(f_tr->Elem1No, b_dof_ids);
+    // b_field->GetSubVector(b_dof_ids, b_local_dofs);
+    // h_fes->GetElementDofs(f_tr->Elem1No, h_dof_ids);
+    // h_field->GetSubVector(h_dof_ids, h_local_dofs);
+    const int space_dim = 3;//f_tr->Face->GetSpaceDim();
 
 
     // // get coordinates for outputting angle vs force (post-proc)
-    // mesh->EnsureNodes();
-    // const mfem::IntegrationRule &gf_nodes = gf_elem.GetNodes();
-    // mfem::ElementTransformation *T = mesh->GetElementTransformation(f_tr->Elem1No);
-    // T->Transform(gf_nodes, coords);
-    // // f_tr->Transform(gf_nodes, coords);
-    // coords_t.Transpose(coords);
-    // gf_fes->GetElementVDofs(f_tr->Elem1No, gf_vdofs);
-    // mfem::FiniteElementSpace::AdjustVDofs(gf_vdofs);
-    // gf_coords.SetSubVector(gf_vdofs, coords_t.GetData());
-    // std::cout << "node data " << coords_t.Size() << " " << gf_nodes.GetWeights().Size() << std::endl;
     mfem::Element * be = mesh->GetBdrElement(i);
     mfem::Array<int> vertices;
     be->GetVertices(vertices);
-    // coords_t = be->GetVertices(vertices);
     mfem::real_t * coords1 = mesh->GetVertex(vertices[0]);
-    // compute radial coordinates
-    // double x_coord = coords_t.GetData()[0];
-    // double y_coord = coords_t.GetData()[1];
-    // double z_coord = coords_t.GetData()[2];
     double x_coord = coords1[0];
     double y_coord = coords1[1];
     double z_coord = coords1[2];
@@ -145,14 +140,14 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
     }
 
     // std::cout << "f_tr " << f_tr->ElementNo << " " << f_tr->Elem1No << " " << i << std::endl;
-    b_fes->GetBdrElementDofs(i, b_bdr_dof_ids);
-    b_field->GetSubVector(b_bdr_dof_ids, b_local_dofs);
-    assert (b_local_dofs.Size() == 1);
-    h_fes->GetBdrElementDofs(i, h_bdr_dof_ids);
-    h_field->GetSubVector(h_bdr_dof_ids, h_local_dofs);
+    // b_fes->GetBdrElementDofs(i, b_bdr_dof_ids);
+    // b_field->GetSubVector(b_bdr_dof_ids, b_local_dofs);
+    // assert (b_local_dofs.Size() == 1);
+    // h_fes->GetBdrElementDofs(i, h_bdr_dof_ids);
+    // h_field->GetSubVector(h_bdr_dof_ids, h_local_dofs);
     
-    b_dshape.SetSize(b_elem.GetDof(), space_dim);
-    h_dshape.SetSize(h_elem.GetDof(), space_dim);
+    // b_dshape.SetSize(b_elem.GetDof(), space_dim);
+    // h_dshape.SetSize(h_elem.GetDof(), space_dim);
     normal_vec.SetSize(space_dim);
 
     const mfem::FiniteElement *el = gf_fes->GetFE(i);
@@ -162,13 +157,14 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
     double force_density_i = 0.0;
 
     /**/
-    for (int j = 0; j < ir.GetNPoints(); j++)
+    for (int j = 0; j < ir->GetNPoints(); j++)
     {
-      const mfem::IntegrationPoint & ip = ir.IntPoint(j);
-      mfem::IntegrationPoint eip;
-      f_tr->Loc1.Transform(ip, eip);
-      f_tr->Face->SetIntPoint(&ip);
-      double face_weight = f_tr->Face->Weight();
+      const mfem::IntegrationPoint & ip = ir->IntPoint(j);
+      // mfem::IntegrationPoint eip;
+      // f_tr->Loc1.Transform(ip, eip);
+      // f_tr->Face->SetIntPoint(&ip);
+      eltrans->SetIntPoint(&ip);
+      // double face_weight = f_tr->Face->Weight();
       // double force_j(0.0);
       // std::cout << "\n\nLoop over NPoints " << j << " out of " << ir.GetNPoints() << std::endl;
       // const mfem::IntegrationPoint &ip = el->GetNodes().IntPoint(dof);
@@ -180,17 +176,32 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
       // f_tr->Elem1->SetIntPoint(&eip);
       
       // compute b normal component
-      b_elem.CalcVShape(*f_tr->Elem1, b_dshape);
-      h_elem.CalcVShape(*f_tr->Elem1, h_dshape);
-      mfem::CalcOrtho(f_tr->Face->Jacobian(), normal_vec);
-      double b_normal_val = b_dshape.InnerProduct(normal_vec, b_local_dofs) / face_weight; /// face_weight;
-      if (b_normal_val > max_flux) { max_flux = b_normal_val; }
-      if (b_normal_val < min_flux) { min_flux = b_normal_val; }
-
-      double h_normal_val = h_dshape.InnerProduct(normal_vec, h_local_dofs) / face_weight;
+      mfem::CalcOrtho(eltrans->Jacobian(), normal_vec);
+      double face_weight = normal_vec.Norml2();
+      mfem::Vector b_vec(space_dim);
       mfem::Vector h_vec(space_dim);
-      mfem::Vector h_tang(space_dim);
-      h_field->GetVectorValue(f_tr->Elem1No, ip, h_vec);
+      // double b_normal_val = b_dshape.InnerProduct(normal_vec, b_local_dofs) / face_weight; /// face_weight;
+      b_field->GetVectorValue(*eltrans, ip, b_vec);
+      double b_normal_val = b_vec * normal_vec / face_weight;
+
+
+      std::cout << "B-vector (" 
+        << b_vec(0) <<  " " 
+        << b_vec(1) <<  " " 
+        << b_vec(2) <<  ") " 
+        << " normal val "
+        << b_normal_val << " "
+        << " normal vec ("
+        << normal_vec(0) <<  " " 
+        << normal_vec(1) <<  " " 
+        << normal_vec(2) <<  ") " 
+        << std::endl;
+
+      // double h_normal_val = h_dshape.InnerProduct(normal_vec, h_local_dofs) / face_weight;
+      // mfem::Vector h_vec(space_dim);
+      /*mfem::Vector h_tang(space_dim);
+      h_field->GetVectorValue(*eltrans, ip, h_vec);
+      double h_normal_val = h_vec * normal_vec / face_weight;
       for (int k = 0; k < space_dim; ++k){
         h_tang(k) = h_vec(k) - (normal_vec(k)*h_normal_val);
       }
@@ -204,6 +215,9 @@ calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
         << " tangent val "
         << h_tangent_val << " "
         << std::endl;
+      */
+      if (b_normal_val > max_flux) { max_flux = b_normal_val; }
+      if (b_normal_val < min_flux) { min_flux = b_normal_val; }
 
 
       // h_normal_val += h_dshape.InnerProduct(normal_vec, h_local_dofs) / face_weight;
