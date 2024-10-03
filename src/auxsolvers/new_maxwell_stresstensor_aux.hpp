@@ -4,10 +4,11 @@
 // Specify postprocessors that depend on one or more gridfunctions
 namespace hephaestus
 {
-
-double calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr);
-
 double calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr, mfem::Coefficient & q);
+
+double calcSurfaceForceDensity(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr);
+
+double calcSurfaceForceDensity(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr, mfem::Coefficient & q);
 
 // Class to calculate and store the flux of a vector GridFunction through a surface
 // at each timestep, optionally scaled by a coefficient.
@@ -24,6 +25,8 @@ public:
             hephaestus::Coefficients & coefficients) override;
 
   void Solve(double t = 0.0) override;
+
+  void WriteForces(std::string fname, mfem::ParGridFunction & gf, int face_attr);
 
   // Initialises the child submesh.
   void InitChildMesh();
@@ -61,6 +64,9 @@ public:
 
   std::shared_ptr<mfem::ParFiniteElementSpace> _h_curl_fe_space_child{nullptr};
   std::unique_ptr<mfem::ND_FECollection> _h_curl_fe_space_fec_child{nullptr};
+
+  std::shared_ptr<mfem::ParFiniteElementSpace> _l2_fe_space_child{nullptr};
+  std::unique_ptr<mfem::L2_FECollection> _l2_fe_space_fec_child{nullptr};
   
   int _face_attr;
 private:
