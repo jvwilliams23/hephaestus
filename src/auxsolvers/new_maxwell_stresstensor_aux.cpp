@@ -31,42 +31,39 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
   mfem::ParFiniteElementSpace * b_fes = b_field->ParFESpace();
   mfem::ParFiniteElementSpace * h_fes = h_field->ParFESpace();
 
-  mfem::ParMesh * mesh = gf_fes->GetParMesh();
+  mfem::ParFiniteElementSpace * fes_to_use = b_field->ParFESpace();
+  // mfem::ParFiniteElementSpace * fes_to_use = gf.ParFESpace();
+
+  mfem::ParMesh * mesh = b_fes->GetParMesh();
 
   mfem::Vector normal_vec;
   mfem::Vector unit_normal_vec;
   mfem::Vector tangent_vec;
 
+  const int space_dim = 3;
+  normal_vec.SetSize(space_dim);
+  tangent_vec.SetSize(space_dim);
+  unit_normal_vec.SetSize(space_dim);
+
   mfem::Array<int> g_dof_ids;
 
   mfem::ElementTransformation *eltrans = NULL;
+
+  int logvar(0);
   
   for (int i = 0; i < mesh->GetNBE(); i++)
   {
     if (mesh->GetBdrAttribute(i) != face_attr)
       continue;
 
-    // get dofs for writing to gridfunction
-    gf_fes->GetBdrElementDofs(i, g_dof_ids);
-
-    eltrans = b_fes->GetBdrElementTransformation(i);
-    const mfem::FiniteElement &gf_elem = *b_fes->GetBE(i);
+    eltrans = fes_to_use->GetBdrElementTransformation(i);
+    const mfem::FiniteElement &gf_elem = *fes_to_use->GetBE(i);
     const mfem::IntegrationRule *ir = NULL;
     if (ir == NULL)
     {
         const int order = 2*gf_elem.GetOrder() + eltrans->OrderW(); // <-----
         ir = &mfem::IntRules.Get(eltrans->GetGeometryType(), order);
     }
-    const int space_dim = 3;
-
-    // get coordinates for outputting angle vs force (post-proc)
-    normal_vec.SetSize(space_dim);
-    tangent_vec.SetSize(space_dim);
-    unit_normal_vec.SetSize(space_dim);
-
-    const mfem::FiniteElement *el = gf_fes->GetFE(i);
-
-    double force_i = 0.0;
 
     for (int j = 0; j < ir->GetNPoints(); j++)
     {
@@ -87,7 +84,6 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       h_field->GetVectorValue(*eltrans, ip, h_vec);
       double h_normal_val = h_vec * unit_normal_vec;
       // divide h_normal_val by face_weight as it is multiplied by normal vec 
-      // mfem::add(h_vec, -h_normal_val / face_weight, normal_vec, h_tang)
       for (int k = 0; k < space_dim; ++k){
         h_tang(k) = h_vec(k) - (unit_normal_vec(k)*h_normal_val);
       }
@@ -124,10 +120,6 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       f_qm.Set(ip.weight * face_weight * b_normal_val * (1.0-1.0/muR_), h_tang);
       f_qm.Add(ip.weight * (0.5/mu0_) * b_normal_val * b_normal_val * (1.0-1.0/muRSqr_), normal_vec);
 
-      // std::cout << "term1 " << mag_term_1 << " t2 " << mag_term_2 << " t3 " << mag_term_3 << std::endl;
-
-      // Integrate alpha * n.Grad(x) + beta * x
-      // double force_j = ((term_1 - term_2) / 2.0) * ip.weight * face_weight ;
       force_mag_mst += f_mst.Norml2();
       force_mag_jm += f_jm.Norml2();
       force_mag_qm += f_qm.Norml2();
@@ -143,12 +135,7 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
     << ", f_qm: " << force_mag_qm 
     <<  std::endl;
 
-  // MPI_Allreduce(&force, &total_force, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
   return 0.0;
-  // std::cout << "end of loop " << std::endl;
-  // return total_force;
-  // return area;
 }
 
 
