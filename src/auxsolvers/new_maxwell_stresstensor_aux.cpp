@@ -5,7 +5,6 @@ TODO:
   how to get `h_tangent_val`?
 
 Questions:
-  - what about inner sphere surface? I not really considered this
   - Is surf force density = $terms * ip.weight * face_weight$? and force is $terms * ip.weight$ only?
 */
 
@@ -18,6 +17,7 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
   double force_mag_mst = 0.0;
   double force_mag_jm = 0.0;
   double force_mag_qm = 0.0;
+  double dummy_integral = 0.0;
   double total_force = 0.0;
   double area = 0.0;
 
@@ -31,8 +31,8 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
   mfem::ParFiniteElementSpace * b_fes = b_field->ParFESpace();
   mfem::ParFiniteElementSpace * h_fes = h_field->ParFESpace();
 
-  mfem::ParFiniteElementSpace * fes_to_use = b_field->ParFESpace();
-  // mfem::ParFiniteElementSpace * fes_to_use = gf.ParFESpace();
+  // mfem::ParFiniteElementSpace * fes_to_use = b_field->ParFESpace();
+  mfem::ParFiniteElementSpace * fes_to_use = gf.ParFESpace();
 
   mfem::ParMesh * mesh = b_fes->GetParMesh();
 
@@ -62,13 +62,52 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
     if (ir == NULL)
     {
         const int order = 2*gf_elem.GetOrder() + eltrans->OrderW(); // <-----
+        // std::cout 
+        //   << "elem order " << gf_elem.GetOrder() 
+        //   << " eltrans orderW " << eltrans->OrderW()
+        //   << " int order = " << order 
+        //   << std::endl;
         ir = &mfem::IntRules.Get(eltrans->GetGeometryType(), order);
     }
+
+
+    // Retrieve the number of basis functions
+    int tr_dof = gf_elem.GetDof();
+
+    // Allocate a vector to hold the values of each basis function
+    mfem::Vector tr_shape(tr_dof);
+    mfem::Vector x(space_dim);
+
+    // mfem::Element * be = mesh->GetBdrElement(i);
+    // mfem::Array<int> vertices;
+    // be->GetVertices(vertices);
+    // mfem::real_t * coords1 = mesh->GetVertex(vertices[0]);
+    // double x_coord = coords1[0];
+    // double y_coord = coords1[1];
+    // double z_coord = coords1[2];
 
     for (int j = 0; j < ir->GetNPoints(); j++)
     {
       const mfem::IntegrationPoint & ip = ir->IntPoint(j);
       eltrans->SetIntPoint(&ip);
+      eltrans->Transform(ip, x);
+
+      gf_elem.CalcShape(ip, tr_shape);
+      std::cout << "elem " << i << " ElementNo " << eltrans->ElementNo << " ir " << j << " tr_shape_fn ";
+      for (int k = 0; k < tr_dof;++k)
+      {
+        std::cout << tr_shape(k) << " ";
+      }
+      std::cout << "ip weight " << ip.weight << " ";
+      std::cout << " Ndof " << tr_dof << " Nint " << ir->GetNPoints();
+      std::cout << " x = (" << x(0) << " " << x(1) << " " << x(2) << ") " ;
+      // std::cout << " vertex = (" << coords1[0] << " " << coords1[1] << " " << coords1[2] << ") " ;
+      std::cout << std::endl;
+
+      
+      // int dof = el.GetDof();
+
+      // shape.SetSize(dof);        // vector of size dof
       
       // compute b normal component
       mfem::CalcOrtho(eltrans->Jacobian(), normal_vec);
@@ -76,9 +115,18 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       unit_normal_vec.Set(1.0/face_weight, normal_vec);
       
       mfem::Vector b_vec(space_dim);
+      mfem::Vector b_vec_alt(space_dim);
       mfem::Vector h_vec(space_dim);
       b_field->GetVectorValue(*eltrans, ip, b_vec);
+      
       double b_normal_val = b_vec * unit_normal_vec;
+
+      // std::cout 
+      //   << "el " << i 
+      //   << " ip weight " << ip.weight 
+      //   << " eltrans.Weight " << eltrans->Weight() 
+      //   << " face_weight " << face_weight 
+      //   << std::endl;
 
       mfem::Vector h_tang(space_dim);
       h_field->GetVectorValue(*eltrans, ip, h_vec);
@@ -87,7 +135,7 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       for (int k = 0; k < space_dim; ++k){
         h_tang(k) = h_vec(k) - (unit_normal_vec(k)*h_normal_val);
       }
-      double h_tangent_val = h_tang.Norml2();
+      // double h_tangent_val = h_tang.Norml2();
 
       mfem::Vector term_1(space_dim);
       mfem::Vector term_2(space_dim);
@@ -100,13 +148,28 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       f_jm = 0.0;
       f_qm = 0.0;
       
-      // maxwell stress tensor method (eq 5)
-      double mag_term_1 = ip.weight*b_normal_val;
-      double mag_term_2 = 0.5*ip.weight*b_normal_val * b_normal_val / mu0_;
-      double mag_term_3 = -0.5*ip.weight * mu0_ * (h_tang * h_tang);\
-      f_mst.Set(mag_term_1, h_tang);
-      f_mst.Add(mag_term_2, unit_normal_vec);
-      f_mst.Add(mag_term_3, unit_normal_vec);
+      std::cout 
+        << "elem " << i 
+        << " b_vec (" 
+        << b_vec(0) << " "
+        << b_vec(1) << " "
+        << b_vec(2) << ") "
+        << " gf_0 " << gf.GetValue(*eltrans, ip) << " "
+        << std::endl;
+      double fn_multiplier = ip.weight;
+
+      // maxwell stress tensor method (eq 5)... In paper, it does not have any term with muR?
+      double mag_term_1 =  b_normal_val;
+      double mag_term_2 =  0.5 * (1.0/mu0_) * b_normal_val * b_normal_val;
+      double mag_term_3 = -0.5 *    mu0_    * (h_tang * h_tang);
+      f_mst.Set(fn_multiplier*mag_term_1, h_tang);
+      f_mst.Add(fn_multiplier*mag_term_2, unit_normal_vec);
+      f_mst.Add(fn_multiplier*mag_term_3, unit_normal_vec);
+      // std::cout << "f_mst terms: " 
+      //   << mag_term_1 << " "
+      //   << mag_term_2 << " "
+      //   << mag_term_3 << " "
+      //   << std::endl;
       /**/
       /*
       force_vec.Set(ip.weight * b_normal_val * b_normal_val / air_permeability, normal_vec);
@@ -114,15 +177,19 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       force_vec.Add(-0.5 * ip.weight * (air_permeability * (h_tang * h_tang) + b_normal_val * b_normal_val / air_permeability), normal_vec);
       */
       // magnetising current method (eq 6)
-      f_jm.Set(ip.weight * b_normal_val * (1.0-muR_), h_tang);
-      f_jm.Add(ip.weight * (0.5*mu0_) * (muRSqr_-1.0) * b_normal_val * b_normal_val, unit_normal_vec);
+      f_jm.Set(fn_multiplier * b_normal_val * (1.0-muR_), h_tang);
+      f_jm.Add(fn_multiplier * (mu0_/2.0) * (muRSqr_-1.0) * (h_tang * h_tang), unit_normal_vec);
       // magnetic charge method (eq 7)
-      f_qm.Set(ip.weight * face_weight * b_normal_val * (1.0-1.0/muR_), h_tang);
-      f_qm.Add(ip.weight * (0.5/mu0_) * b_normal_val * b_normal_val * (1.0-1.0/muRSqr_), normal_vec);
+      f_qm.Set(fn_multiplier * b_normal_val * (1.0-1.0/muR_), h_tang);
+      f_qm.Add(fn_multiplier * (0.5/mu0_) * b_normal_val * b_normal_val * (1.0-1.0/muRSqr_), normal_vec);
 
-      force_mag_mst += f_mst.Norml2();
-      force_mag_jm += f_jm.Norml2();
-      force_mag_qm += f_qm.Norml2();
+      // force_mag_mst += f_mst.Norml2();
+      // force_mag_jm += f_jm.Norml2();
+      // force_mag_qm += f_qm.Norml2();
+      force_mag_mst += f_mst(1);
+      force_mag_jm += f_jm(1);
+      force_mag_qm += f_qm(1);
+      dummy_integral += 1.0 * ip.weight ;
     }
   }
 
@@ -133,9 +200,11 @@ calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
     << "\n\ntotal forces - f_mst: " << force_mag_mst
     << ", f_jm: " << force_mag_jm
     << ", f_qm: " << force_mag_qm 
+    << ", dummy: " << dummy_integral
     <<  std::endl;
 
   return 0.0;
+
 }
 
 
@@ -376,7 +445,6 @@ void
 MaxwellStressTensorAux::Solve(double t)
 {
   double force;
-  // TODO: _gf should be _b_gf and _h_gf
 
   _mesh_child->Transfer(*_b_gf, *_b_gf_child);
   _mesh_child->Transfer(*_h_gf, *_h_gf_child);
@@ -386,10 +454,11 @@ MaxwellStressTensorAux::Solve(double t)
     // force = calcSurfaceForceDensity(_b_gf, _h_gf, _face_attr, *_gf);
     force = calcSurfaceForceDensity(_b_gf_child.get(), _h_gf_child.get(), 101, *_gf_child.get());
     
-    std::cout << "\n\nCalculating stresses on inner surface" << std::endl;
-    calcMaxwellStressTensor(_b_gf_child.get(), _h_gf_child.get(), 102, *_gf_child.get());
+    // std::cout << "\n\nCalculating stresses on inner surface" << std::endl;
+    // calcMaxwellStressTensor(_b_gf_child.get(), _h_gf_child.get(), 102, *_gf_child.get());
     std::cout << "\n\nCalculating stresses on outer surface" << std::endl;
     calcMaxwellStressTensor(_b_gf_child.get(), _h_gf_child.get(), 101, *_gf_child.get());
+    // calcMaxwellStressTensor(_b_gf, _h_gf, 101, *_gf);
     // force = calcSurfaceForceDensity(_b_gf_child.get(), _h_gf_child.get(), 102, *_gf_child.get());
     if (_gf)
       _mesh_child->Transfer(*_gf_child, *_gf);
