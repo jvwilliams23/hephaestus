@@ -335,6 +335,8 @@ calcSurfaceForceDensity(mfem::GridFunction * b_field, mfem::GridFunction * h_fie
   // return calcSurfaceForceDensity(b_field, h_field, face_attr, one_coef);
 }
 
+// ************************************************************************** //
+
 MaxwellStressTensorAux::MaxwellStressTensorAux(std::string b_name, std::string h_name, int face_attr, std::string coef_name)
   : _b_name(std::move(b_name)), _h_name(std::move(h_name)), _coef_name(std::move(coef_name)), _face_attr(face_attr)
 {
@@ -368,6 +370,8 @@ MaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
 
   _mesh_child->Transfer(*_gf, *_gf_child);
 }
+
+// ************************************************************************** //
 
 void
 MaxwellStressTensorAux::Solve(double t)
@@ -477,6 +481,7 @@ MaxwellStressTensorAux::WriteForces(std::string fname, mfem::ParGridFunction & g
   Rfs.close();
 }
 
+// ************************************************************************** //
 
 void
 MaxwellStressTensorAux::InitChildMesh()
