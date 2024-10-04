@@ -161,7 +161,7 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
 
   mfem::ParMesh * mesh = gf_fes->GetParMesh();
 
-  mfem::Vector normal_vec;
+  mfem::Vector normal_vec, unit_normal_vec;
   mfem::Array<int> g_dof_ids;
 
   double max_flux (-1.0);
@@ -214,6 +214,7 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
     // }
 
     normal_vec.SetSize(space_dim);
+    unit_normal_vec.SetSize(space_dim);
 
     const mfem::FiniteElement *el = gf_fes->GetFE(i);
 
@@ -230,10 +231,11 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       // compute b normal component
       mfem::CalcOrtho(eltrans->Jacobian(), normal_vec);
       double face_weight = normal_vec.Norml2();
+      unit_normal_vec.Set(1.0/face_weight, normal_vec);
       mfem::Vector b_vec(space_dim);
       mfem::Vector h_vec(space_dim);
       b_field->GetVectorValue(*eltrans, ip, b_vec);
-      double b_normal_val = b_vec * normal_vec / face_weight;
+      double b_normal_val = b_vec * unit_normal_vec;
 
 
       /* 
@@ -251,11 +253,11 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       */
       mfem::Vector h_tang(space_dim);
       h_field->GetVectorValue(*eltrans, ip, h_vec);
-      double h_normal_val = h_vec * normal_vec / face_weight;
+      double h_normal_val = h_vec * unit_normal_vec;
       for (int k = 0; k < space_dim; ++k){
-        h_tang(k) = h_vec(k) - (normal_vec(k)*h_normal_val);
+        h_tang(k) = h_vec(k) - (unit_normal_vec(k)*h_normal_val);
       }
-      double h_tangent_val = h_tang.Norml2();
+      // double h_tangent_val = h_tang.Norml2();
       /*
       std::cout << "H-vector (" 
         << h_vec(0) <<  " " 
@@ -274,19 +276,16 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       double term_2(0.0);
 
       term_1 = (b_normal_val * b_normal_val) * (1.0/air_permeability - 1.0/sphere_permeability);// / (face_weight*face_weight*ip.weight*ip.weight);
-      term_2 = (h_tangent_val * h_tangent_val) * (air_permeability - sphere_permeability);
+      term_2 = (h_tang * h_tang) * (air_permeability - sphere_permeability);
 
       // Measure the area of the boundary
       area += ip.weight * face_weight;
 
       // Integrate alpha * n.Grad(x) + beta * x
       double force_density_j = ((term_1 - term_2) / 2.0) * ip.weight ;
-      double force_j = ((term_1 - term_2) / 2.0) * ip.weight * face_weight ;
-      // std::cout 
-      //   << "force density " << force_density_j
-      //   << " ip.weight " << ip.weight 
-      //   << " face_weight " << face_weight 
-      //   << std::endl;
+      // take y component of force for hollow sphere/levitation example
+      double force_j = ((term_1 - term_2) / 2.0) * ip.weight * face_weight * unit_normal_vec(1) ;
+
       force_i += force_j;
       force_density_i += force_density_j;
     }
