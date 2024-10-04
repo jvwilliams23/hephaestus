@@ -365,6 +365,8 @@ MaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
   MakeGridFunctions(0);
   MakeFESpaces(1);
   MakeGridFunctions(1);
+
+  _mesh_child->Transfer(*_gf, *_gf_child);
 }
 
 void
