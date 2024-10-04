@@ -405,8 +405,8 @@ MaxwellStressTensorAux::Solve(double t)
     std::ofstream fes_ofs(fes_name.str().c_str());
     // _mesh_parent->Print(mesh_ofs);
     // _gf->Save(fes_ofs);
-    _mesh_child->Print(mesh_ofs);
-    _gf_child->Save(fes_ofs);
+    _mesh_parent->Print(mesh_ofs);
+    _gf->Save(fes_ofs);
 
   }
   else
