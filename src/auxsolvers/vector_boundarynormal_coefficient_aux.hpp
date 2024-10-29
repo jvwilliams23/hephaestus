@@ -28,15 +28,6 @@ public:
   // virtual void BuildLinearFormNormal();
   void Solve(double t = 0.0) override;
 
-  // Initialises the child submesh.
-  void InitChildMesh();
-
-  // Creates the relevant FE Collections and Spaces for the child submesh.
-  void MakeFESpaces();
-
-  // Creates the relevant GridFunctions for the child submesh.
-  void MakeGridFunctions();
-
 protected:
   const std::string _gf_name;   // name of the variable
   const std::string _vec_coef_name; // name of the coefficient
@@ -53,6 +44,7 @@ protected:
   mfem::VectorCoefficient * _vec_coef{nullptr};
   // mfem::Coefficient * _mass_coef{nullptr};
   std::shared_ptr<mfem::Coefficient> _mass_coef{nullptr};
+  std::shared_ptr<mfem::Coefficient> _rt_boundary_coef{nullptr};
   mfem::Array<int> _boundary_attr; // int of attribute to limit boundary integration to
   mfem::Array<int> _boundary_attr_marker; // int of attribute to limit boundary integration to
 

@@ -27,12 +27,8 @@ BoundaryCoefficientAux::Init(const hephaestus::GridFunctions & gridfunctions,
 
   _mesh_parent = _gf->ParFESpace()->GetParMesh();
   hephaestus::AttrToMarker(_boundary_attr, _boundary_attr_marker, _mesh_parent->attributes.Max());
-  
-  InitChildMesh();
-  MakeFESpaces();
-  MakeGridFunctions();
 
-  _test_fes = _gf_child->ParFESpace();
+  _test_fes = _gf->ParFESpace();
 
   BuildBilinearForm();
   BuildLinearForm();
@@ -44,20 +40,18 @@ void
 BoundaryCoefficientAux::BuildBilinearForm()
 {
   _a = std::make_unique<mfem::ParBilinearForm>(_test_fes);
-  // _a->AddBoundaryIntegrator(new mfem::MassIntegrator(*_coef)); 
-  _a->AddDomainIntegrator(new mfem::MassIntegrator());
-  _a->AddBoundaryIntegrator(new mfem::MassIntegrator(*_coef)); 
-  /*if (_boundary_attr.Size() > 0)
+  if (_test_fes->FEColl()->GetRangeType(3) == mfem::FiniteElement::SCALAR)
   {
-    std::cout << "constraining bilinearform boundary integration" << std::endl;
-    // _a->AddBoundaryIntegrator(new mfem::MassIntegrator(*_coef), _boundary_attr_marker); 
-    // _a->AddBoundaryIntegrator(new mfem::MassIntegrator(*_coef)); 
-    _a->AddDomainIntegrator(new mfem::MassIntegrator(*_coef)); 
+    std::cout << "IsSCALAR" << std::endl;
   }
   else
   {
-    _a->AddBoundaryIntegrator(new mfem::MassIntegrator()); 
-  }*/
+    std::cout << "IsVECTOR" << std::endl;
+  }
+  
+  _a->AddDomainIntegrator(new mfem::MassIntegrator());
+  // _a->AddBoundaryIntegrator(new mfem::MassIntegrator(*_coef), _boundary_attr_marker); 
+  _a->AddBoundaryIntegrator(new mfem::MassIntegrator()); 
   _a->Assemble();
   _a->Finalize();
 }
@@ -66,155 +60,38 @@ void
 BoundaryCoefficientAux::BuildLinearForm()
 {
   _b = std::make_unique<mfem::ParLinearForm>(_test_fes);
-  // _b->AddBoundaryIntegrator(new mfem::BoundaryLFIntegrator(*_coef));
-  _b->AddDomainIntegrator(new mfem::DomainLFIntegrator(*_coef));
-  /*if (_boundary_attr.Size() > 0)
-  {
-    std::cout << "constraining linearform boundary integration" << std::endl;
-    // _b->AddBoundaryIntegrator(new mfem::BoundaryLFIntegrator(*_coef), _boundary_attr_marker);
-    // _b->AddBoundaryIntegrator(new mfem::BoundaryLFIntegrator(*_coef));
-    _b->AddDomainIntegrator(new mfem::DomainLFIntegrator(*_coef));
-  }
-  else
-  {
-    std::cout << "boundary attr size = 0, no constraint on integration" << std::endl;
-    _b->AddBoundaryIntegrator(new mfem::BoundaryLFIntegrator(*_coef));
-  }*/
+  // _b->AddBoundaryIntegrator(new mfem::VectorFEBoundaryFluxLFIntegrator(*_coef), _boundary_attr_marker);
+  _b->AddBoundaryIntegrator(new mfem::VectorFEBoundaryFluxLFIntegrator(*_coef));
+  // if (_test_fes->FEColl()->GetRangeType(3) == mfem::FiniteElement::SCALAR)
+  // {
+  //   _b->AddDomainIntegrator(new mfem::VectorDomainLFIntegrator(*_coef));
+  // }
+  // else
+  // {
+  //   _b->AddDomainIntegrator(new mfem::VectorFEDomainLFIntegrator(*_coef));
+  // }
   _b->Assemble();
 }
 
 void
 BoundaryCoefficientAux::Solve(double t)
 {
-  // when all this stuff is commented, there is no NaN
-  /* */
   mfem::Vector x(_test_fes->GetTrueVSize()); // Gridfunction true DOFs
-  // x = 0.0;
+  x = 0.0;
 
-  //  Array<int> ess_bdr(pmesh->bdr_attributes.Max());
-  //  ess_bdr = 1;
-  //  mfem::Array<int> ess_dof;
-  //  _test_fes->GetEssentialTrueDofs(_attr_marker, ess_dof);
-  // mfem::Vector x(ess_dof.Size()); // Gridfunction true DOFs
-
-
-  mfem::Array<int> new_boundary_markers;
-  new_boundary_markers.Append(1);
-  // TODO: Why are these the same size?
-  _gf_child->ProjectCoefficient(*_coef);           // Initial condition
-  _gf_child->ProjectBdrCoefficient(*_coef, new_boundary_markers);
-  // _gf_child->ProjectBdrCoefficient(*_coef, _boundary_attr_marker);
-  _gf_child->GetTrueDofs(x);
+  _gf->ProjectBdrCoefficient(*_coef, _boundary_attr_marker);
+  _gf->GetTrueDofs(x);
 
   std::cout << "GetTrueVSize " << _test_fes->GetTrueVSize() 
-    // << " EssentialTrueDofs size " << ess_dof.Size() 
-    << " _gf.Size() " << _gf_child->Size() << std::endl;
+    << " _gf.Size() " << _gf->Size() << std::endl;
+
   // Reassemble in case coef has changed
   _b->Update();
   _b->Assemble();
 
-  // for (int i=0; i<_gf_child->Size();++i)
-  // {
-  //   std::cout << "init..   x[i="<<i<<"] = "<< x[i] << " "
-  //     << " _b = " << _b->GetData()[i]
-  //     << " _gf_child[i] " << _gf_child->GetData()[i]
-  //     << std::endl;
-  // }
-
   _solver->Mult(*_b, x);
 
-
-  // for (int i = 0; i<_gf_child->Size(); ++i)
-  // {
-  //   std::cout << "BE = " << i 
-  //     << " gf " << _gf_child->GetData()[i]
-  // }
-  _gf_child->SetFromTrueDofs(x);
-  // {
-  //   std::cout << "post-Mult.   x[i="<<i<<"] = "<< x[i] << " "
-  //     << " _b = " << _b->GetData()[i]
-  //     << " _gf_child[i] " << _gf_child->GetData()[i]
-  //     << std::endl;
-  // }
-
-  if (_gf)
-    _mesh_child->Transfer(*_gf_child, *_gf);
-  /* */
-
-  std::ostringstream mesh_name, fes_name, sub_mesh_name, sub_fes_name;
-  int myid = mfem::Mpi::WorldRank();
-  mesh_name << "mesh." << std::setfill('0') << std::setw(6) << myid;
-  fes_name << "field." << std::setfill('0') << std::setw(6) << myid;
-  sub_mesh_name << "sub_mesh." << std::setfill('0') << std::setw(6) << myid;
-  sub_fes_name << "sub_field." << std::setfill('0') << std::setw(6) << myid;
-  std::ofstream mesh_ofs(mesh_name.str().c_str());
-  std::ofstream sub_mesh_ofs(sub_mesh_name.str().c_str());
-  std::ofstream fes_ofs(fes_name.str().c_str());
-  std::ofstream sub_fes_ofs(sub_fes_name.str().c_str());
-  _mesh_parent->Print(mesh_ofs);
-  _mesh_child->Print(sub_mesh_ofs);
-  _gf->Save(fes_ofs);
-  _gf_child->Save(sub_fes_ofs);
-  // for (int i=0; i<_gf_child->Size();++i)
-
-}
-
-
-void
-BoundaryCoefficientAux::InitChildMesh()
-{
-  if (_mesh_child == nullptr)
-  {
-    // for (int i = 0; i < _attr_marker.Size(); ++i)
-    //   std::cout << "_attr_marker[i="<<i<<"] "  << _attr_marker[i]  << std::endl; 
-    _mesh_child = std::make_unique<mfem::ParSubMesh>(
-        mfem::ParSubMesh::CreateFromBoundary(*_mesh_parent, _boundary_attr));
-        // mfem::ParSubMesh::CreateFromDomain(*_mesh_parent, domain_marker));
-  }
-}
-
-
-void
-BoundaryCoefficientAux::MakeFESpaces()
-{ 
-  if (_h1_fe_space_child == nullptr)
-  {
-    int dim = _mesh_parent->Dimension();
-    int dim_child = _mesh_child->Dimension();
-    std::cout << "parent dim = " << dim << " child dim " << dim_child << std::endl;
-    _order_h1 = _gf->ParFESpace()->FEColl()->GetOrder();
-    _h1_fe_space_fec_child =
-        std::make_unique<mfem::H1_FECollection>(_order_h1, dim_child);
-    _h1_fe_space_child = std::make_shared<mfem::ParFiniteElementSpace>(
-        _mesh_child.get(), _h1_fe_space_fec_child.get());
-  }
-
-  // if (_h_curl_fe_space_child == nullptr)
-  // {
-  //   _h_curl_fe_space_fec_child =
-  //       std::make_unique<mfem::ND_FECollection>(_order_hcurl, _mesh_child->Dimension());
-  //   _h_curl_fe_space_child = std::make_shared<mfem::ParFiniteElementSpace>(
-  //       _mesh_child.get(), _h_curl_fe_space_fec_child.get());
-  // }
-
-  // if (_source_current_density && _h_div_fe_space_child == nullptr)
-  // {
-  //   _h_div_fe_space_fec_child =
-  //       std::make_unique<mfem::RT_FECollection>(_order_hdiv - 1, _mesh_child->Dimension());
-  //   _h_div_fe_space_child = std::make_shared<mfem::ParFiniteElementSpace>(
-  //       _mesh_child.get(), _h_div_fe_space_fec_child.get());
-  // }
-}
-
-void 
-BoundaryCoefficientAux::MakeGridFunctions()
-{
-  if (_gf_child == nullptr){
-    std::cout << "setting _gf_child" << std::endl;
-    _gf_child = std::make_shared<mfem::ParGridFunction>(_h1_fe_space_child.get());
-
-  }
-
+  _gf->SetFromTrueDofs(x);
 }
 
 } // namespace hephaestus
