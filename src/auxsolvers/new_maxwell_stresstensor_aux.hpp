@@ -6,7 +6,7 @@ namespace hephaestus
 {
 double calcMaxwellStressTensor(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr, mfem::Coefficient & q);
 
-double calcSurfaceForceDensity(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr);
+// double calcSurfaceForceDensity(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr);
 
 double calcSurfaceForceDensity(mfem::GridFunction * b_field, mfem::GridFunction * h_field, int face_attr, mfem::Coefficient & q);
 

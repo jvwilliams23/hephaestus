@@ -32,25 +32,25 @@ defineCoefficients()
   coil_0._scalar_coefficients.Register("electrical_conductivity",
                                       std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
   coil_0._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(solid_permeability));
+                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain coil_1("coil_1", 104);
   coil_1._scalar_coefficients.Register("electrical_conductivity",
                                       std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
   coil_1._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(solid_permeability));
+                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain coil_2("coil_2", 105);
   coil_2._scalar_coefficients.Register("electrical_conductivity",
                                       std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
   coil_2._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(solid_permeability));
+                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain coil_3("coil_3", 106);
   coil_3._scalar_coefficients.Register("electrical_conductivity",
                                       std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
   coil_3._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(solid_permeability));
+                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Coefficients coefficients(
       std::vector<hephaestus::Subdomain>({vacuum_region, sphere, coil_0, coil_1, coil_2, coil_3}));
@@ -58,7 +58,7 @@ defineCoefficients()
   // coefficients._scalars.Register("dielectric_permittivity",
   //                                std::make_shared<mfem::ConstantCoefficient>(8.854e-12));
 
-  coefficients._scalars.Register("I", std::make_shared<mfem::ConstantCoefficient>(2000));
+  coefficients._scalars.Register("I", std::make_shared<mfem::ConstantCoefficient>(20000));
 
   return coefficients;
 }
@@ -125,6 +125,7 @@ main(int argc, char * argv[])
 
   // Set Mesh
   mfem::Mesh mesh((std::string(DATA_DIR) + std::string("./hollow_sphere_vac_multiplePhsVols.e")).c_str(), 1, 1);
+  // mfem::Mesh mesh((std::string(DATA_DIR) + std::string("./hollow_sphere_vac_thincoil.e")).c_str(), 1, 1);
   auto pmesh = std::make_shared<mfem::ParMesh>(MPI_COMM_WORLD, mesh);
 
   // int ref_level = 1;
@@ -142,14 +143,15 @@ main(int argc, char * argv[])
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
 
-  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
-  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
+  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
+  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
   // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
 
   // std::vector<int> boundary_marker(107, 0);
   // boundary_marker[100] = 1;
   int outer_sphere_id = 101;
+  int inner_sphere_id = 102;
   int max_id_surf = 110;
   // std::vector<int> boundary_marker(max_id_surf+1, 0);
   // std::vector<int> boundary_marker = {outer_sphere_id};
@@ -176,8 +178,19 @@ main(int argc, char * argv[])
   auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
     "magnetic_flux_density", "magnetic_vector_potential", outer_sphere_id, "dev_maxwell_stress"
   );
+  // auto maxwell_stress_monitor_inner = std::make_shared<hephaestus::MaxwellStressTensorAux>(
+  //   "magnetic_flux_density", "magnetic_vector_potential", inner_sphere_id, "dev_maxwell_stress"
+  // );
   maxwell_stress_monitor->SetPriority(2);
+  // maxwell_stress_monitor_inner->SetPriority(2);
   problem_builder->AddPostprocessor("MaxwellStressMonitor", maxwell_stress_monitor);
+
+
+  auto fluxmonitor = std::make_shared<hephaestus::FluxMonitorAux>("magnetic_flux_density", 101);
+  fluxmonitor->SetPriority(2);
+  problem_builder->AddPostprocessor("FluxMonitor", fluxmonitor);
+
+  // problem_builder->AddPostprocessor("MaxwellStressMonitorInner", maxwell_stress_monitor_inner);
 
   hephaestus::InputParameters solver_options;
   solver_options.SetParam("Tolerance", float(1.0e-13));
@@ -197,6 +210,14 @@ main(int argc, char * argv[])
 
   hephaestus::logger.info("Created executioner");
   executioner->Execute();
+
+  // double current;
+  // double t;
+  // for (std::size_t i = 0; i < fluxmonitor->_times.Size(); ++i)
+  // {
+  //     t = fluxmonitor->_times[i];
+  //     hephaestus::logger.info("t = {} s, flux = {} ", t, fluxmonitor->_fluxes[i]);
+  // }
 
 /*
   int rank;
