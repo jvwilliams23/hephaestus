@@ -1,6 +1,6 @@
 #include "hephaestus.hpp"
 
-const char * DATA_DIR = "../../data/";
+const char * DATA_DIR = "../data/";
 
 
 hephaestus::Coefficients
@@ -136,6 +136,7 @@ main(int argc, char * argv[])
 
   problem_builder->SetMesh(pmesh);
   problem_builder->AddFESpace(std::string("H1"), std::string("H1_3D_P1"));
+  problem_builder->AddFESpace(std::string("Vector_H1"), std::string("H1_3D_P1"), 3);
   problem_builder->AddFESpace(std::string("HCurl"), std::string("ND_3D_P1"));
   problem_builder->AddFESpace(std::string("HDiv"), std::string("RT_3D_P0"));
   problem_builder->AddFESpace(std::string("Scalar_L2"), std::string("L2_3D_P0"));
@@ -143,8 +144,8 @@ main(int argc, char * argv[])
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
 
-  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
-  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("H1"));
+  // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
+  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Vector_H1"));
   // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
 
