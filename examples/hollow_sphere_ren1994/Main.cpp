@@ -140,12 +140,13 @@ main(int argc, char * argv[])
   problem_builder->AddFESpace(std::string("HCurl"), std::string("ND_3D_P1"));
   problem_builder->AddFESpace(std::string("HDiv"), std::string("RT_3D_P0"));
   problem_builder->AddFESpace(std::string("Scalar_L2"), std::string("L2_3D_P0"));
+  problem_builder->AddFESpace(std::string("Vector_L2"), std::string("L2_3D_P0"), 3);
   problem_builder->AddGridFunction(std::string("magnetic_vector_potential"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("source_grad_phi"), std::string("HCurl"));
   problem_builder->AddGridFunction(std::string("magnetic_flux_density"), std::string("HDiv"));
 
   // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("HDiv"));
-  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Vector_H1"));
+  problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Vector_L2"));
   // problem_builder->AddGridFunction(std::string("dev_maxwell_stress"), std::string("Scalar_L2"));
   problem_builder->RegisterMagneticFluxDensityAux("magnetic_flux_density");
 
