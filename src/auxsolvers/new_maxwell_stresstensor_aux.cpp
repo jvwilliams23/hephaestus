@@ -18,7 +18,6 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
   double area = 0.0;
 
   double air_permeability = M_PI * 4.0e-7;
-  // double sphere_permeability = 500*air_permeability;
 
   mfem::ParFiniteElementSpace * gf_fes = gf.ParFESpace();
   mfem::ParFiniteElementSpace * b_fes = b_field->ParFESpace();
