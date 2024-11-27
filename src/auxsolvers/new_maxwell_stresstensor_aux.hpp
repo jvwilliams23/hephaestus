@@ -4,9 +4,9 @@
 // Specify postprocessors that depend on one or more gridfunctions
 namespace hephaestus
 {
-double calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int face_attr, mfem::Coefficient & q);
+double calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int attr, mfem::Coefficient & q);
 
-double calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int face_attr, mfem::Coefficient & q, mfem::Coefficient & mu);
+double calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int attr, mfem::Coefficient & q, mfem::Coefficient & mu, bool use_face_attr);
 
 // Class to calculate and store the flux of a vector GridFunction through a surface
 // at each timestep, optionally scaled by a coefficient.
@@ -15,7 +15,7 @@ class MaxwellStressTensorAux : public AuxSolver
 
 public:
   MaxwellStressTensorAux() = default;
-  MaxwellStressTensorAux(std::string b_name, std::string h_name, int face_attr, std::string coef_name = "");
+  MaxwellStressTensorAux(std::string b_name, std::string h_name, mfem::Array<int> attr, std::string coef_name = "", bool use_face_attr = true);
 
   ~MaxwellStressTensorAux() override = default;
 
@@ -24,7 +24,7 @@ public:
 
   void Solve(double t = 0.0) override;
 
-  void WriteForces(std::string fname, mfem::ParGridFunction & gf, int face_attr);
+  // void WriteForces(std::string fname, mfem::ParGridFunction & gf, int attr);
 
   std::string _b_name;  // name of the vector variable
   std::string _h_name;  // name of the vector variable
@@ -40,7 +40,8 @@ public:
 
   mfem::ParMesh * _mesh_parent{nullptr};
 
-  int _face_attr;
+  mfem::Array<int> _attr;
+  bool _use_face_attr;
 };
 
 } // namespace hephaestus

@@ -3,13 +3,13 @@
 namespace hephaestus
 {
 double
-calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int face_attr, mfem::ParGridFunction & gf)
+calcMaxwellStressTensor(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int attr, mfem::ParGridFunction & gf)
 {
   return 0.0;
 }
 
 double
-calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int face_attr, mfem::ParGridFunction & gf, mfem::Coefficient & mu)
+calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int attr, mfem::ParGridFunction & gf, mfem::Coefficient & mu, bool use_face_attr)
 {
   double flux = 0.0;
   double force = 0.0;
@@ -32,12 +32,24 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
   
   for (int i = 0; i < mesh->GetNBE(); i++)
   {
-    if (mesh->GetBdrAttribute(i) != face_attr)
-      continue;
-
     f_tr = mesh->GetFaceElementTransformations(
       mesh->GetBdrElementFaceIndex(i)
     );
+
+    if (use_face_attr){
+      if (mesh->GetBdrAttribute(i) != attr)
+        continue;
+    }
+    else{
+      if (mesh->GetAttribute(f_tr->Elem1No) != attr)
+      {
+        continue;
+      }
+      else
+      {
+      }
+    }
+    std::cout << "bdr elem " << i << " bdr attr = " << mesh->GetBdrAttribute(i) << " elem attr " << mesh->GetAttribute(f_tr->Elem1No) << std::endl;
     const mfem::FiniteElement &elem = *b_fes->GetBE(i);
     const mfem::IntegrationRule *ir = NULL;
     if (ir == NULL)
@@ -134,8 +146,8 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
 
 // ************************************************************************** //
 
-MaxwellStressTensorAux::MaxwellStressTensorAux(std::string b_name, std::string h_name, int face_attr, std::string coef_name)
-  : _b_name(std::move(b_name)), _h_name(std::move(h_name)), _coef_name(std::move(coef_name)), _face_attr(face_attr)
+MaxwellStressTensorAux::MaxwellStressTensorAux(std::string b_name, std::string h_name, mfem::Array<int> attr, std::string coef_name, bool use_face_attr)
+  : _b_name(std::move(b_name)), _h_name(std::move(h_name)), _coef_name(std::move(coef_name)), _attr(attr), _use_face_attr(use_face_attr)
 {
 }
 
@@ -150,7 +162,6 @@ MaxwellStressTensorAux::Init(const hephaestus::GridFunctions & gridfunctions,
   _mesh_parent = _b_gf->ParFESpace()->GetParMesh();
 
   std::cout << "Finding " << _coef_name << " " 
-    << coefficients._scalars.Has(_coef_name) << " " 
     << gridfunctions.Has(_coef_name) << " " 
     << std::endl;
   if (gridfunctions.Has(_coef_name))
@@ -170,69 +181,11 @@ MaxwellStressTensorAux::Solve(double t)
 
   if (_gf != nullptr)
   {
-    std::cout << "Passing a gf to calc" << std::endl;
-    force = calcSurfaceForceDensity(_b_gf, _h_gf, 101, *_gf, *_mu_coef);
-    // calcMaxwellStressTensor(_b_gf, _h_gf, 101, *_gf);
-
-    // WriteForces("gf_coords.txt", *_gf, _face_attr);
-  }
-
-  _times.Append(t);
-  _forces.Append(force);
-}
-
-// ************************************************************************** //
-
-void 
-MaxwellStressTensorAux::WriteForces(std::string fname, mfem::ParGridFunction & gf, int face_attr)
-{
-  // for post-proc
-  mfem::ParFiniteElementSpace * gf_fes = gf.ParFESpace();
-  mfem::ParMesh * mesh = gf_fes->GetParMesh();
-
-  mfem::Array<int> g_dof_ids;
-  std::ofstream Rfs(fname, std::ofstream::out);
-
-  mfem::ElementTransformation *eltrans = NULL;
-  mfem::FaceElementTransformations * f_tr = NULL;  
-  
-  for (int i = 0; i < mesh->GetNBE(); i++)
-  {
-    if (mesh->GetBdrAttribute(i) != face_attr)
-      continue;
-
-    f_tr =
-        mesh->GetFaceElementTransformations(mesh->GetBdrElementFaceIndex(i));
-
-    // get dofs for writing to gridfunction
-    gf_fes->GetBdrElementDofs(i, g_dof_ids);
-    // eltrans = gf_fes->GetBdrElementTransformation(i);
-    // // get coordinates for outputting angle vs force (post-proc)
-    mfem::Element * be = mesh->GetBdrElement(i);
-    mfem::Array<int> vertices;
-    be->GetVertices(vertices);
-    mfem::real_t * coords1 = mesh->GetVertex(vertices[0]);
-    double x_coord = coords1[0];
-    double y_coord = coords1[1];
-    double z_coord = coords1[2];
-    double rad = std::sqrt(x_coord*x_coord + y_coord*y_coord + z_coord*z_coord);
-    double theta_coord = std::atan(y_coord/x_coord);
-    double phi_coord = std::acos(y_coord / rad);
-    // write cartesian and radial coords to file
-    if (x_coord != 0.0){
-      Rfs 
-        << x_coord << " "
-        << y_coord << " "
-        << z_coord << " "
-        << rad << " "
-        << theta_coord << " "
-        << phi_coord //<< " "
-      ;
+    for (int i=0; i<_attr.Size();++i)
+    {
+      force = calcSurfaceForceDensity(_b_gf, _h_gf, _attr[i], *_gf, *_mu_coef, _use_face_attr);
     }
-    Rfs << "\n";
   }
-
-  Rfs.close();
 }
 
 // ************************************************************************** //
