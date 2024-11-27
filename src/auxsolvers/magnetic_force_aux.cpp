@@ -3,7 +3,12 @@
 namespace hephaestus
 {
 double
-calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction * h_field, int attr, mfem::ParGridFunction & gf, mfem::Coefficient & mu, bool use_face_attr)
+calcSurfaceForceDensity(mfem::ParGridFunction * b_field,
+                        mfem::ParGridFunction * h_field,
+                        int attr,
+                        mfem::ParGridFunction & gf,
+                        mfem::Coefficient & mu,
+                        bool use_face_attr)
 {
   double force = 0.0;
   double total_force = 0.0;
@@ -21,27 +26,27 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
   mfem::Vector normal_vec, unit_normal_vec;
   mfem::Array<int> g_dof_ids;
 
-  mfem::FaceElementTransformations * f_tr = NULL;
-  
+  mfem::FaceElementTransformations * f_tr = nullptr;
+
   for (int i = 0; i < mesh->GetNBE(); i++)
   {
-    f_tr = mesh->GetFaceElementTransformations(
-      mesh->GetBdrElementFaceIndex(i)
-    );
+    f_tr = mesh->GetFaceElementTransformations(mesh->GetBdrElementFaceIndex(i));
 
-    if (use_face_attr){
+    if (use_face_attr)
+    {
       if (mesh->GetBdrAttribute(i) != attr)
         continue;
     }
-    else{
+    else
+    {
       if (mesh->GetAttribute(f_tr->Elem1No) != attr)
       {
         continue;
       }
     }
-    const mfem::FiniteElement &elem = *b_fes->GetBE(i);
-    const mfem::IntegrationRule *ir = NULL;
-    if (ir == NULL)
+    const mfem::FiniteElement & elem = *b_fes->GetBE(i);
+    const mfem::IntegrationRule * ir = nullptr;
+    if (ir == nullptr)
     {
       const int order = 2 * elem.GetOrder() + 3;
       ir = &mfem::IntRules.Get(f_tr->FaceGeom, order);
@@ -51,7 +56,7 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
     normal_vec.SetSize(space_dim);
     unit_normal_vec.SetSize(space_dim);
 
-    const mfem::FiniteElement *el = gf_fes->GetFE(i);
+    const mfem::FiniteElement * el = gf_fes->GetFE(i);
 
     double force_i = 0.0;
     double area_i = 0.0;
@@ -81,23 +86,24 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
       mfem::Vector b_vec(space_dim);
       mfem::Vector h_vec(space_dim);
       mfem::Vector h_tang(space_dim);
-      
+
       // get vector values at integration point
       b_field->GetVectorValue(*f_tr->Elem1, ip, b_vec);
       h_field->GetVectorValue(*f_tr->Elem1, ip, h_vec);
       double sphere_permeability = mu.Eval(*f_tr->Elem1, ip);
 
       // compute b normal component
-      unit_normal_vec.Set(1.0/face_weight, normal_vec);
+      unit_normal_vec.Set(1.0 / face_weight, normal_vec);
       double b_normal_val = b_vec * unit_normal_vec;
       double h_normal_val = h_vec * unit_normal_vec;
-      for (int k = 0; k < space_dim; ++k){
-        h_tang(k) = h_vec(k) - (unit_normal_vec(k)*h_normal_val);
+      for (int k = 0; k < space_dim; ++k)
+      {
+        h_tang(k) = h_vec(k) - (unit_normal_vec(k) * h_normal_val);
       }
 
       double term_1(0.0);
       double term_2(0.0);
-      term_1 = (b_normal_val * b_normal_val) * (1.0/air_permeability - 1.0/sphere_permeability);
+      term_1 = (b_normal_val * b_normal_val) * (1.0 / air_permeability - 1.0 / sphere_permeability);
       term_2 = (h_tang * h_tang) * (air_permeability - sphere_permeability);
 
       // Measure the area of the boundary
@@ -129,14 +135,22 @@ calcSurfaceForceDensity(mfem::ParGridFunction * b_field, mfem::ParGridFunction *
 
 // ************************************************************************** //
 
-MagneticForceAux::MagneticForceAux(std::string b_name, std::string h_name, mfem::Array<int> attr, std::string coef_name, bool use_face_attr)
-  : _b_name(std::move(b_name)), _h_name(std::move(h_name)), _coef_name(std::move(coef_name)), _attr(attr), _use_face_attr(use_face_attr)
+MagneticForceAux::MagneticForceAux(std::string b_name,
+                                   std::string h_name,
+                                   mfem::Array<int> attr,
+                                   std::string coef_name,
+                                   bool use_face_attr)
+  : _b_name(std::move(b_name)),
+    _h_name(std::move(h_name)),
+    _coef_name(std::move(coef_name)),
+    _attr(std::move(attr)),
+    _use_face_attr(use_face_attr)
 {
 }
 
 void
 MagneticForceAux::Init(const hephaestus::GridFunctions & gridfunctions,
-                     hephaestus::Coefficients & coefficients)
+                       hephaestus::Coefficients & coefficients)
 {
   _b_gf = gridfunctions.Get(_b_name);
   _h_gf = gridfunctions.Get(_h_name);
@@ -159,7 +173,7 @@ MagneticForceAux::Solve(double t)
 
   if (_gf != nullptr)
   {
-    for (int i=0; i<_attr.Size();++i)
+    for (int i = 0; i < _attr.Size(); ++i)
     {
       force = calcSurfaceForceDensity(_b_gf, _h_gf, _attr[i], *_gf, *_mu_coef, _use_face_attr);
       _times.Append(t);

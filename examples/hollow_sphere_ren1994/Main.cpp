@@ -3,7 +3,6 @@
 const char * DATA_DIR = "../data/";
 const char * MESH_NAME = "hollow_sphere_vac.e";
 
-
 hephaestus::Coefficients
 defineCoefficients()
 {
@@ -14,44 +13,45 @@ defineCoefficients()
   double air_conductivity = 1.0;
 
   hephaestus::Subdomain vacuum_region("vacuum_region", 107);
-  vacuum_region._scalar_coefficients.Register("electrical_conductivity",
-                                    std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
-  vacuum_region._scalar_coefficients.Register("magnetic_permeability",
-                                    std::make_shared<mfem::ConstantCoefficient>(air_permeability));
+  vacuum_region._scalar_coefficients.Register(
+      "electrical_conductivity", std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
+  vacuum_region._scalar_coefficients.Register(
+      "magnetic_permeability", std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain sphere("sphere", 100);
-  sphere._scalar_coefficients.Register("electrical_conductivity",
-                                      std::make_shared<mfem::ConstantCoefficient>(solid_conductivity));
-  sphere._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(solid_permeability));
+  sphere._scalar_coefficients.Register(
+      "electrical_conductivity", std::make_shared<mfem::ConstantCoefficient>(solid_conductivity));
+  sphere._scalar_coefficients.Register(
+      "magnetic_permeability", std::make_shared<mfem::ConstantCoefficient>(solid_permeability));
 
   hephaestus::Subdomain coil_0("coil_0", 103);
-  coil_0._scalar_coefficients.Register("electrical_conductivity",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
-  coil_0._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
+  coil_0._scalar_coefficients.Register(
+      "electrical_conductivity", std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
+  coil_0._scalar_coefficients.Register(
+      "magnetic_permeability", std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain coil_1("coil_1", 104);
-  coil_1._scalar_coefficients.Register("electrical_conductivity",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
-  coil_1._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
+  coil_1._scalar_coefficients.Register(
+      "electrical_conductivity", std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
+  coil_1._scalar_coefficients.Register(
+      "magnetic_permeability", std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain coil_2("coil_2", 105);
-  coil_2._scalar_coefficients.Register("electrical_conductivity",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
-  coil_2._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
+  coil_2._scalar_coefficients.Register(
+      "electrical_conductivity", std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
+  coil_2._scalar_coefficients.Register(
+      "magnetic_permeability", std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Subdomain coil_3("coil_3", 106);
-  coil_3._scalar_coefficients.Register("electrical_conductivity",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
-  coil_3._scalar_coefficients.Register("magnetic_permeability",
-                                      std::make_shared<mfem::ConstantCoefficient>(air_permeability));
+  coil_3._scalar_coefficients.Register(
+      "electrical_conductivity", std::make_shared<mfem::ConstantCoefficient>(air_conductivity));
+  coil_3._scalar_coefficients.Register(
+      "magnetic_permeability", std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
   hephaestus::Coefficients coefficients(
       std::vector<hephaestus::Subdomain>({vacuum_region, sphere, coil_0, coil_1, coil_2, coil_3}));
-  // coefficients._scalars.Register("frequency", std::make_shared<mfem::ConstantCoefficient>(200.0));
+  // coefficients._scalars.Register("frequency",
+  // std::make_shared<mfem::ConstantCoefficient>(200.0));
   // coefficients._scalars.Register("dielectric_permittivity",
   //                                std::make_shared<mfem::ConstantCoefficient>(8.854e-12));
 
@@ -109,8 +109,7 @@ main(int argc, char * argv[])
   mfem::OptionsParser args(argc, argv);
   args.AddOption(
       &DATA_DIR, "-dataDir", "--data_directory", "Directory storing input data for tests.");
-  args.AddOption(
-      &MESH_NAME, "-meshName", "--mesh_name", "File name.");
+  args.AddOption(&MESH_NAME, "-meshName", "--mesh_name", "File name.");
   args.AddOption(
       &ref_level, "-ref", "--refinement_level", "number of uniform refinement iterations.");
   args.Parse();
@@ -128,7 +127,6 @@ main(int argc, char * argv[])
 
   for (int l = 0; l < ref_level; ++l)
     pmesh->UniformRefinement();
-
 
   problem_builder->SetMesh(pmesh);
   problem_builder->AddFESpace(std::string("H1"), std::string("H1_3D_P1"));
@@ -163,8 +161,9 @@ main(int argc, char * argv[])
   problem_builder->SetOutputs(outputs);
 
   auto magnetic_force_monitor = std::make_shared<hephaestus::MagneticForceAux>(
-    "magnetic_flux_density", "magnetic_vector_potential", boundary_marker, "magnetic_force"
-    // "magnetic_flux_density", "magnetic_vector_potential", volume_marker, "magnetic_force", false
+      "magnetic_flux_density", "magnetic_vector_potential", boundary_marker, "magnetic_force"
+      // "magnetic_flux_density", "magnetic_vector_potential", volume_marker, "magnetic_force",
+      // false
   );
   magnetic_force_monitor->SetPriority(2);
   problem_builder->AddPostprocessor("MaxwellStressMonitor", magnetic_force_monitor);
