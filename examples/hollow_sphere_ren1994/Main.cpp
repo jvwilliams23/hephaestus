@@ -19,8 +19,7 @@ defineCoefficients()
   vacuum_region._scalar_coefficients.Register("magnetic_permeability",
                                     std::make_shared<mfem::ConstantCoefficient>(air_permeability));
 
-  hephaestus::Subdomain sphere("sphere", 100); // this works
-  // hephaestus::Subdomain sphere("sphere", 111); // this doesn't, but runs faster (for checking geometrical properties)
+  hephaestus::Subdomain sphere("sphere", 100);
   sphere._scalar_coefficients.Register("electrical_conductivity",
                                       std::make_shared<mfem::ConstantCoefficient>(solid_conductivity));
   sphere._scalar_coefficients.Register("magnetic_permeability",
