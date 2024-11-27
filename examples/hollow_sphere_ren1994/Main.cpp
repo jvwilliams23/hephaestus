@@ -170,8 +170,8 @@ main(int argc, char * argv[])
   problem_builder->SetOutputs(outputs);
 
   auto maxwell_stress_monitor = std::make_shared<hephaestus::MaxwellStressTensorAux>(
-    // "magnetic_flux_density", "magnetic_vector_potential", boundary_marker, "dev_maxwell_stress"
-    "magnetic_flux_density", "magnetic_vector_potential", volume_marker, "dev_maxwell_stress", false
+    "magnetic_flux_density", "magnetic_vector_potential", boundary_marker, "dev_maxwell_stress"
+    // "magnetic_flux_density", "magnetic_vector_potential", volume_marker, "dev_maxwell_stress", false
   );
   maxwell_stress_monitor->SetPriority(2);
   problem_builder->AddPostprocessor("MaxwellStressMonitor", maxwell_stress_monitor);
