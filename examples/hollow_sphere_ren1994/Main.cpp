@@ -8,12 +8,9 @@ hephaestus::Coefficients
 defineCoefficients()
 {
   double air_permeability = M_PI * 4.0e-7;
-  // double solid_permeability = air_permeability;
-  // double air_permeability = 1.0;
   double solid_permeability = air_permeability * 500.0;
 
-  double solid_conductivity = 1.0;//3.526e7;
-  // double solid_conductivity = 1.0;
+  double solid_conductivity = 1.0;
   double air_conductivity = 1.0;
 
   hephaestus::Subdomain vacuum_region("vacuum_region", 107);
@@ -128,7 +125,6 @@ main(int argc, char * argv[])
 
   // Set Mesh
   mfem::Mesh mesh((std::string(DATA_DIR) + std::string(MESH_NAME)).c_str(), 1, 1);
-  // mfem::Mesh mesh((std::string(DATA_DIR) + std::string("./hollow_sphere_vac_thincoil.e")).c_str(), 1, 1);
   auto pmesh = std::make_shared<mfem::ParMesh>(MPI_COMM_WORLD, mesh);
 
   // int ref_level = 1;
